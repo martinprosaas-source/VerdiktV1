@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Users, MoreVertical, Edit, Trash, X, Check } from 'lucide-react';
+import { Plus, Users, MoreVertical, X, Check } from 'lucide-react';
 import { Avatar } from '../../components/app/feedback/Avatar';
 import { poles, users, teamMembers } from '../../data/mockData';
 import type { Pole } from '../../types';
