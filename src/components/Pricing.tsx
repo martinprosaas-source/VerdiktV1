@@ -1,0 +1,228 @@
+import { Section, FadeIn } from './ui/Section';
+import { Check, ArrowRight, Crown, Clock } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { useBetaModal, type SelectedPlan } from '../context/BetaModalContext';
+
+const plans = [
+    {
+        name: 'Free',
+        members: '5 membres',
+        price: '0',
+        period: '€',
+        originalPrice: null,
+        monthlyEquivalent: null,
+        pricePerUser: null,
+        description: '5 décisions/mois',
+        features: [
+            'Décisions limitées',
+            'Synthèse IA',
+            'Decision Log',
+        ],
+        cta: 'Commencer gratuitement',
+        highlighted: false,
+        founding: false,
+    },
+    {
+        name: 'Pro',
+        members: '20 membres',
+        price: '790',
+        period: '€/an',
+        originalPrice: '1 188',
+        monthlyEquivalent: '65€/mois',
+        pricePerUser: '3,29€/mois/user',
+        description: 'Économisez 33%',
+        features: [
+            'Décisions illimitées',
+            'Synthèse IA',
+            'Decision Log',
+            'Slack & Notion',
+        ],
+        cta: 'Rejoindre',
+        highlighted: true,
+        founding: true,
+    },
+    {
+        name: 'Business',
+        members: '50 membres',
+        price: '1 990',
+        period: '€/an',
+        originalPrice: '2 988',
+        monthlyEquivalent: '165€/mois',
+        pricePerUser: '3,32€/mois/user',
+        description: 'Économisez 33%',
+        features: [
+            'Tout Pro inclus',
+            'Support prioritaire',
+            'Accès fondateur',
+        ],
+        cta: 'Rejoindre',
+        highlighted: false,
+        founding: true,
+    },
+];
+
+export const Pricing = () => {
+    const { openBetaModal } = useBetaModal();
+
+    return (
+        <Section id="pricing" className="py-28 sm:py-40 bg-background relative overflow-hidden transition-colors duration-300">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6">
+                {/* Header */}
+                <FadeIn className="mb-16 sm:mb-20 text-center">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/20 mb-6">
+                        <Crown className="w-4 h-4 text-amber-500" />
+                        <span className="text-sm font-semibold text-amber-500">FOUNDING MEMBER</span>
+                    </div>
+                    <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-primary leading-[0.95] tracking-tight mb-4">
+                        75 places
+                        <br />
+                        <span className="text-tertiary">Prix garanti à vie.</span>
+                    </h2>
+                    <p className="text-lg text-secondary max-w-xl mx-auto">
+                        Slack <span className="text-primary font-medium">7€/user</span>, 
+                        Notion <span className="text-primary font-medium">8€/user</span>, 
+                        Monday <span className="text-primary font-medium">9€/user</span>...
+                        <br className="sm:hidden" />
+                        {' '}<span className="text-emerald-500 font-semibold">Verdikt à 3,30€.</span>
+                    </p>
+                </FadeIn>
+
+                {/* Plans grid */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6 mb-12">
+                    {plans.map((plan, index) => (
+                        <FadeIn key={plan.name} delay={0.1 * index}>
+                            <motion.div
+                                whileHover={{ y: -6 }}
+                                className={`
+                                    relative h-full p-6 sm:p-8 rounded-2xl transition-all duration-300
+                                    ${plan.highlighted 
+                                        ? 'bg-gradient-to-b from-emerald-500/10 via-emerald-500/5 to-transparent border-2 border-emerald-500/30 shadow-[0_0_50px_rgba(16,185,129,0.15)]' 
+                                        : 'bg-card/50 border border-zinc-200 dark:border-white/5 hover:border-zinc-300 dark:hover:border-white/10'
+                                    }
+                                `}
+                            >
+                                {/* Founding badge */}
+                                {plan.founding && (
+                                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-gradient-to-r from-amber-500 to-amber-600 text-black text-xs font-bold rounded-full shadow-lg">
+                                        -33%
+                                    </div>
+                                )}
+
+                                {/* Plan header */}
+                                <div className="mb-6">
+                                    <div className="flex items-center justify-between mb-1">
+                                        <p className={`text-lg font-bold ${plan.highlighted ? 'text-emerald-500' : 'text-primary'}`}>
+                                            {plan.name}
+                                        </p>
+                                        <span className="text-xs text-tertiary bg-zinc-100 dark:bg-white/5 px-2 py-1 rounded-full">
+                                            {plan.members}
+                                        </span>
+                                    </div>
+                                    
+                                    {/* Price */}
+                                    <div className="mt-4">
+                                        {plan.originalPrice && (
+                                            <p className="text-sm text-tertiary line-through mb-1">
+                                                {plan.originalPrice}€/an
+                                            </p>
+                                        )}
+                                        <div className="flex items-baseline gap-1">
+                                            <span className="text-4xl sm:text-5xl font-bold text-primary">{plan.price}</span>
+                                            <span className="text-base text-tertiary">{plan.period}</span>
+                                        </div>
+                                        {plan.monthlyEquivalent && (
+                                            <p className="text-sm text-secondary mt-1">
+                                                soit {plan.monthlyEquivalent}
+                                            </p>
+                                        )}
+                                        {plan.pricePerUser && (
+                                            <p className="text-xs text-emerald-500 font-medium mt-1">
+                                                → {plan.pricePerUser}
+                                            </p>
+                                        )}
+                                        {!plan.monthlyEquivalent && plan.price === '0' && (
+                                            <p className="text-sm text-secondary mt-1">
+                                                Pour toujours
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Features */}
+                                <ul className="space-y-3 mb-8">
+                                    {plan.features.map((feature) => (
+                                        <li key={feature} className="flex items-center gap-2.5">
+                                            <Check className={`w-4 h-4 flex-shrink-0 ${plan.highlighted ? 'text-emerald-500' : 'text-emerald-500/60'}`} />
+                                            <span className="text-sm text-secondary">{feature}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+
+                                {/* CTA */}
+                                {plan.name === 'Free' ? (
+                                    <div className="w-full py-3.5 rounded-xl font-medium text-sm bg-zinc-100 dark:bg-white/5 text-tertiary border border-zinc-200 dark:border-white/10 flex items-center justify-center gap-2 cursor-not-allowed">
+                                        <Clock className="w-4 h-4" />
+                                        Bientôt accessible
+                                    </div>
+                                ) : (
+                                    <motion.button
+                                        onClick={() => openBetaModal(plan.name as SelectedPlan)}
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        className={`
+                                            w-full py-3.5 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 text-sm
+                                            ${plan.highlighted 
+                                                ? 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-[0_0_30px_rgba(16,185,129,0.3)]' 
+                                                : 'bg-zinc-100 dark:bg-white/5 hover:bg-zinc-200 dark:hover:bg-white/10 text-primary border border-zinc-200 dark:border-white/10'
+                                            }
+                                        `}
+                                    >
+                                        {plan.cta}
+                                        <ArrowRight className="w-4 h-4" />
+                                    </motion.button>
+                                )}
+                            </motion.div>
+                        </FadeIn>
+                    ))}
+                </div>
+
+                {/* Guarantees */}
+                <FadeIn delay={0.4}>
+                    <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-secondary mb-8">
+                        <span className="flex items-center gap-2">
+                            <Check className="w-4 h-4 text-emerald-500" />
+                            Paiement annuel uniquement
+                        </span>
+                        <span className="flex items-center gap-2">
+                            <Check className="w-4 h-4 text-emerald-500" />
+                            Prix garanti à vie
+                        </span>
+                        <span className="flex items-center gap-2">
+                            <Check className="w-4 h-4 text-emerald-500" />
+                            Accès direct au fondateur
+                        </span>
+                    </div>
+                </FadeIn>
+
+                {/* Post-beta note */}
+                <FadeIn delay={0.5}>
+                    <div className="mt-8 pt-8 border-t border-zinc-200 dark:border-white/5">
+                        <div className="flex flex-col items-center gap-2">
+                            <div className="flex items-center gap-2 text-sm">
+                                <Clock className="w-4 h-4 text-amber-500" />
+                                <span className="text-secondary">
+                                    Après la beta :{' '}
+                                    <span className="text-primary font-medium">99€/mois</span> (Pro) et{' '}
+                                    <span className="text-primary font-medium">249€/mois</span> (Business)
+                                </span>
+                            </div>
+                            <p className="text-xs text-emerald-500 font-medium">
+                                Votre prix Founding Member est garanti à vie ✓
+                            </p>
+                        </div>
+                    </div>
+                </FadeIn>
+            </div>
+        </Section>
+    );
+};
