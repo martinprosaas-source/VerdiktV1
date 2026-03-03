@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './components/ThemeProvider';
 import { BetaModalProvider } from './context/BetaModalContext';
+import { AuthGuard } from './components/AuthGuard';
 
 // Landing page
 import { Landing } from './pages/Landing';
@@ -29,16 +30,30 @@ function App() {
       <BetaModalProvider>
         <BrowserRouter>
           <Routes>
-            {/* Landing page */}
-            <Route path="/" element={<Landing />} />
+            {/* Landing page - with auto-redirect logic */}
+            <Route path="/" element={
+              <AuthGuard>
+                <Landing />
+              </AuthGuard>
+            } />
 
             {/* Auth routes (ready for production) */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/onboarding" element={<Onboarding />} />
             
-            {/* App routes */}
-            <Route path="/app" element={<AppLayout />}>
+            {/* Onboarding - protected, requires auth */}
+            <Route path="/onboarding" element={
+              <AuthGuard requireAuth>
+                <Onboarding />
+              </AuthGuard>
+            } />
+            
+            {/* App routes - protected, requires auth and onboarding */}
+            <Route path="/app" element={
+              <AuthGuard requireAuth>
+                <AppLayout />
+              </AuthGuard>
+            }>
               <Route index element={<Dashboard />} />
               <Route path="decisions" element={<DecisionsList />} />
               <Route path="decisions/new" element={<NewDecision />} />
