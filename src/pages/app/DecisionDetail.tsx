@@ -1,12 +1,13 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, Check, Sparkles, Users, Calendar, Download, Share2, Building2 } from 'lucide-react';
+import { ArrowLeft, Clock, Check, Sparkles, Users, Calendar, Download, Share2, Building2, Loader2 } from 'lucide-react';
 import { StatusBadge, getStatusVariant, getStatusLabel } from '../../components/app/feedback/Badge';
 import { Progress } from '../../components/app/feedback/Progress';
 import { Avatar } from '../../components/app/feedback/Avatar';
 import { DeadlineIndicator } from '../../components/app/feedback/DeadlineIndicator';
 import { ArgumentsSection } from '../../components/app/ArgumentsSection';
-import { decisions, currentUser, poles } from '../../data/mockData';
-import { useState } from 'react';
+import { useDecisions, useAuth } from '../../hooks';
+import { supabase } from '../../lib/supabase';
+import { useState, useEffect } from 'react';
 import type { Argument } from '../../types';
 
 const formatDate = (date: Date) => {
@@ -21,9 +22,119 @@ const formatDate = (date: Date) => {
 export const DecisionDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const decision = decisions.find(d => d.id === id);
+    const { getDecisionById } = useDecisions();
+    const { profile } = useAuth();
+    
+    const [decision, setDecision] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
     const [selectedOption, setSelectedOption] = useState<string | null>(null);
-    const [localArguments, setLocalArguments] = useState<Argument[]>(decision?.arguments || []);
+    const [isVoting, setIsVoting] = useState(false);
+    const [localArguments, setLocalArguments] = useState<Argument[]>([]);
+    const [userVote, setUserVote] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (id) {
+            fetchDecisionDetails();
+        }
+    }, [id]);
+
+    const fetchDecisionDetails = async () => {
+        if (!id) return;
+
+        try {
+            setLoading(true);
+            
+            // Get decision from hook
+            const decisionData = getDecisionById(id);
+            
+            if (decisionData) {
+                // Fetch participants
+                const { data: participantsData } = await supabase
+                    .from('decision_participants')
+                    .select(`
+                        users(id, first_name, last_name, email, avatar_color)
+                    `)
+                    .eq('decision_id', id);
+
+                const participants = participantsData?.map((p: any) => ({
+                    id: p.users.id,
+                    firstName: p.users.first_name,
+                    lastName: p.users.last_name,
+                    email: p.users.email,
+                    avatarColor: p.users.avatar_color,
+                })) || [];
+
+                // Fetch votes to know who voted
+                const { data: votesData } = await supabase
+                    .from('votes')
+                    .select('user_id, option_id')
+                    .eq('decision_id', id);
+
+                const votesMap = new Map();
+                votesData?.forEach((vote: any) => {
+                    votesMap.set(vote.user_id, vote.option_id);
+                });
+
+                setDecision({
+                    ...decisionData,
+                    participants,
+                    votesMap,
+                });
+                
+                // Check if user has voted
+                if (profile?.id) {
+                    const userVoteOption = votesMap.get(profile.id);
+                    if (userVoteOption) {
+                        setUserVote(userVoteOption);
+                        setSelectedOption(userVoteOption);
+                    }
+                }
+
+                // Fetch arguments
+                const { data: argsData } = await supabase
+                    .from('arguments')
+                    .select(`
+                        *,
+                        user:users(first_name, last_name, email, avatar_color)
+                    `)
+                    .eq('decision_id', id)
+                    .order('created_at', { ascending: true });
+
+                if (argsData) {
+                    setLocalArguments(argsData.map((arg: any) => ({
+                        id: arg.id,
+                        userId: arg.user_id,
+                        user: {
+                            id: arg.user_id,
+                            firstName: arg.user.first_name,
+                            lastName: arg.user.last_name,
+                            email: arg.user.email,
+                            avatarColor: arg.user.avatar_color,
+                        },
+                        optionId: arg.option_id,
+                        text: arg.text,
+                        mentions: arg.mentions || [],
+                        createdAt: new Date(arg.created_at),
+                    })));
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching decision details:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                    <Loader2 className="w-8 h-8 animate-spin text-emerald-500 mx-auto mb-4" />
+                    <p className="text-sm text-secondary">Chargement de la décision...</p>
+                </div>
+            </div>
+        );
+    }
 
     if (!decision) {
         return (
@@ -39,44 +150,105 @@ export const DecisionDetail = () => {
         );
     }
 
-    const totalVotes = decision.options.reduce((acc, opt) => acc + opt.votes, 0);
-    const totalParticipants = decision.participants.length;
-    const hasVoted = decision.options.some(opt => opt.voters.includes(currentUser.id));
+    const totalVotes = decision.votes_count || 0;
+    const totalParticipants = decision.participants_count || 0;
+    const hasVoted = !!userVote;
     const isActive = decision.status === 'active';
-    const winningOption = [...decision.options].sort((a, b) => b.votes - a.votes)[0];
-    const pole = decision.poleId ? poles.find(p => p.id === decision.poleId) : null;
+    const winningOption = [...decision.options].sort((a, b) => (b.votes_count || 0) - (a.votes_count || 0))[0];
+    const pole = decision.pole;
 
-    const getPoleColorClass = (color: string) => {
-        const colors: Record<string, string> = {
-            purple: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
-            pink: 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20',
-            blue: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
-            emerald: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
-            orange: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20',
-            cyan: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20',
-            yellow: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20',
-            red: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
+    const getPoleColorClass = (hexColor: string) => {
+        const colorMap: Record<string, string> = {
+            '#a855f7': 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
+            '#ec4899': 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20',
+            '#3b82f6': 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
+            '#10b981': 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+            '#f97316': 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20',
+            '#06b6d4': 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20',
+            '#eab308': 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20',
+            '#ef4444': 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
         };
-        return colors[color] || colors.blue;
+        return colorMap[hexColor] || colorMap['#3b82f6'];
     };
 
-    const handleVote = () => {
-        if (selectedOption) {
-            navigate('/app/decisions');
+    const handleVote = async () => {
+        if (!selectedOption || !profile?.id || !id) return;
+
+        setIsVoting(true);
+        try {
+            // Check if user already voted
+            if (hasVoted) {
+                // Delete old vote
+                await supabase
+                    .from('votes')
+                    .delete()
+                    .eq('decision_id', id)
+                    .eq('user_id', profile.id);
+            }
+
+            // Insert new vote
+            const { error } = await supabase
+                .from('votes')
+                .insert({
+                    decision_id: id,
+                    option_id: selectedOption,
+                    user_id: profile.id,
+                });
+
+            if (error) throw error;
+
+            // Refresh decision data
+            setUserVote(selectedOption);
+            await fetchDecisionDetails();
+        } catch (error) {
+            console.error('Error voting:', error);
+        } finally {
+            setIsVoting(false);
         }
     };
 
-    const handleAddArgument = (optionId: string, text: string, mentions: string[]) => {
-        const newArgument: Argument = {
-            id: `arg-${Date.now()}`,
-            userId: currentUser.id,
-            user: currentUser,
-            optionId,
-            text,
-            mentions,
-            createdAt: new Date(),
-        };
-        setLocalArguments(prev => [...prev, newArgument]);
+    const handleAddArgument = async (optionId: string, text: string, mentions: string[]) => {
+        if (!profile?.id || !id) return;
+
+        try {
+            const { data, error } = await supabase
+                .from('arguments')
+                .insert({
+                    decision_id: id,
+                    option_id: optionId,
+                    user_id: profile.id,
+                    text,
+                    mentions: mentions,
+                })
+                .select(`
+                    *,
+                    user:users(first_name, last_name, email, avatar_color)
+                `)
+                .single();
+
+            if (error) throw error;
+
+            if (data) {
+                const newArgument: Argument = {
+                    id: data.id,
+                    userId: data.user_id,
+                    user: {
+                        id: data.user_id,
+                        firstName: data.user.first_name,
+                        lastName: data.user.last_name,
+                        email: data.user.email,
+                        avatarColor: data.user.avatar_color,
+                    },
+                    optionId: data.option_id,
+                    text: data.text,
+                    mentions: data.mentions || [],
+                    createdAt: new Date(data.created_at),
+                };
+                setLocalArguments(prev => [...prev, newArgument]);
+            }
+        } catch (error) {
+            console.error('Error adding argument:', error);
+        }
     };
 
     const exportToPDF = () => {
@@ -194,13 +366,14 @@ Recommandation: ${decision.aiSummary.recommendation}
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2 sm:gap-3">
-                            {decision.options.map((option) => {
+                            {decision.options.map((option: any) => {
+                                const optionVotes = option.votes_count || 0;
                                 const percentage = totalVotes > 0 
-                                    ? Math.round((option.votes / totalVotes) * 100) 
+                                    ? Math.round((optionVotes / totalVotes) * 100) 
                                     : 0;
                                 const isWinner = !isActive && option.id === winningOption?.id;
                                 const isSelected = selectedOption === option.id;
-                                const canVote = isActive && !hasVoted;
+                                const canVote = isActive;
 
                                 return (
                                     <button
@@ -250,17 +423,24 @@ Recommandation: ${decision.aiSummary.recommendation}
                             })}
                         </div>
 
-                        {isActive && !hasVoted && (
+                        {isActive && (
                             <button
                                 onClick={handleVote}
-                                disabled={!selectedOption}
-                                className={`mt-4 w-full py-2.5 font-medium rounded-lg transition-colors ${
-                                    selectedOption
+                                disabled={!selectedOption || isVoting}
+                                className={`mt-4 w-full py-2.5 font-medium rounded-lg transition-colors flex items-center justify-center gap-2 ${
+                                    selectedOption && !isVoting
                                         ? 'bg-emerald-500 hover:bg-emerald-400 text-white'
                                         : 'bg-zinc-100 dark:bg-white/5 text-tertiary cursor-not-allowed'
                                 }`}
                             >
-                                Confirmer mon vote
+                                {isVoting ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        {hasVoted ? 'Modification du vote...' : 'Enregistrement...'}
+                                    </>
+                                ) : (
+                                    hasVoted ? 'Modifier mon vote' : 'Confirmer mon vote'
+                                )}
                             </button>
                         )}
                     </section>
@@ -335,7 +515,7 @@ Recommandation: ${decision.aiSummary.recommendation}
                                 <div>
                                     <p className="text-xs text-tertiary">Créée par</p>
                                     <p className="text-sm text-primary">
-                                        {decision.creator.firstName} {decision.creator.lastName}
+                                        {decision.creator?.first_name || 'Unknown'} {decision.creator?.last_name || ''}
                                     </p>
                                 </div>
                             </div>
@@ -348,7 +528,7 @@ Recommandation: ${decision.aiSummary.recommendation}
                                         {isActive ? 'Deadline' : 'Terminée le'}
                                     </p>
                                     <p className="text-sm text-primary">
-                                        {formatDate(decision.deadline)}
+                                        {formatDate(new Date(decision.deadline))}
                                     </p>
                                 </div>
                             </div>
@@ -372,8 +552,8 @@ Recommandation: ${decision.aiSummary.recommendation}
                             Participants ({totalParticipants})
                         </h2>
                         <div className="space-y-1.5">
-                            {decision.participants.map((user) => {
-                                const voted = decision.options.some(opt => opt.voters.includes(user.id));
+                            {decision.participants?.map((user: any) => {
+                                const voted = decision.votesMap?.has(user.id);
                                 return (
                                     <div key={user.id} className="flex items-center justify-between py-1">
                                         <div className="flex items-center gap-2">
