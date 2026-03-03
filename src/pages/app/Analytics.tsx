@@ -9,10 +9,13 @@ import {
     Award,
     Zap,
     ThumbsUp,
-    Activity
+    Activity,
+    Loader2
 } from 'lucide-react';
-import { teamAnalytics, users, poles, decisions } from '../../data/mockData';
+import { useDecisions, useTeam, usePoles } from '../../hooks';
 import { Avatar } from '../../components/app/feedback/Avatar';
+import { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
 
 const StatCard = ({ 
     label, 
@@ -215,24 +218,148 @@ const LeaderboardCard = ({
 };
 
 export const Analytics = () => {
-    const trendDecisions = teamAnalytics.decisionsLastMonth > 0
-        ? Math.round(((teamAnalytics.decisionsThisMonth - teamAnalytics.decisionsLastMonth) / teamAnalytics.decisionsLastMonth) * 100)
+    const { decisions } = useDecisions();
+    const { members } = useTeam();
+    const { poles: polesData } = usePoles();
+    
+    const [loading, setLoading] = useState(true);
+    const [analytics, setAnalytics] = useState<any>(null);
+
+    useEffect(() => {
+        if (decisions.length > 0 && members.length > 0) {
+            calculateAnalytics();
+        }
+    }, [decisions, members, polesData]);
+
+    const calculateAnalytics = async () => {
+        try {
+            setLoading(true);
+
+            // Get current date info
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
+
+            // Calculate decisions by month (last 5 months)
+            const decisionsByMonth = [];
+            for (let i = 4; i >= 0; i--) {
+                const targetDate = new Date(currentYear, currentMonth - i, 1);
+                const monthName = targetDate.toLocaleDateString('fr-FR', { month: 'short' });
+                const count = decisions.filter(d => {
+                    const decisionDate = new Date(d.created_at);
+                    return decisionDate.getMonth() === targetDate.getMonth() && 
+                           decisionDate.getFullYear() === targetDate.getFullYear();
+                }).length;
+                decisionsByMonth.push({ month: monthName, count });
+            }
+
+            // Calculate total stats
+            const totalDecisions = decisions.length;
+            const completedDecisions = decisions.filter(d => d.status === 'completed').length;
+            const activeDecisions = decisions.filter(d => d.status === 'active').length;
+            
+            const decisionsThisMonth = decisionsByMonth[4]?.count || 0;
+            const decisionsLastMonth = decisionsByMonth[3]?.count || 0;
+
+            // Fetch all votes and arguments for participation tracking
+            const { data: allVotes } = await supabase
+                .from('votes')
+                .select('user_id, decision_id, created_at');
+
+            const { data: allArguments } = await supabase
+                .from('arguments')
+                .select('user_id, decision_id, created_at');
+
+            // Calculate participation by member
+            const participationByMember = members.map(member => {
+                const memberVotes = allVotes?.filter(v => v.user_id === member.id) || [];
+                const memberArguments = allArguments?.filter(a => a.user_id === member.id) || [];
+                const memberDecisions = decisions.filter(d => d.creator_id === member.id);
+
+                return {
+                    userId: member.id,
+                    user: {
+                        firstName: member.first_name,
+                        lastName: member.last_name,
+                        avatarColor: member.avatar_color,
+                    },
+                    votesCount: memberVotes.length,
+                    argumentsCount: memberArguments.length,
+                    decisionsCreated: memberDecisions.length,
+                };
+            });
+
+            // Calculate average participation rate
+            const totalPossibleVotes = totalDecisions * members.length;
+            const totalActualVotes = allVotes?.length || 0;
+            const averageParticipationRate = totalPossibleVotes > 0 
+                ? Math.round((totalActualVotes / totalPossibleVotes) * 100) 
+                : 0;
+
+            // Calculate average time to decision (for completed decisions)
+            // Using deadline as a proxy for completion time
+            const completedDecisionsData = decisions.filter(d => d.status === 'completed');
+            const avgTime = completedDecisionsData.length > 0
+                ? completedDecisionsData.reduce((sum, d) => {
+                    const created = new Date(d.created_at).getTime();
+                    const deadline = new Date(d.deadline).getTime();
+                    return sum + (deadline - created);
+                }, 0) / completedDecisionsData.length
+                : 0;
+            const averageTimeToDecision = Math.round(avgTime / (1000 * 60 * 60)); // Convert to hours
+
+            setAnalytics({
+                totalDecisions,
+                completedDecisions,
+                activeDecisions,
+                decisionsThisMonth,
+                decisionsLastMonth,
+                decisionsByMonth,
+                participationByMember,
+                averageParticipationRate,
+                averageTimeToDecision: averageTimeToDecision || 24,
+                totalArguments: allArguments?.length || 0,
+                totalVotes: allVotes?.length || 0,
+            });
+        } catch (error) {
+            console.error('Error calculating analytics:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (loading || !analytics) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                    <Loader2 className="w-8 h-8 animate-spin text-emerald-500 mx-auto mb-4" />
+                    <p className="text-sm text-secondary">Calcul des analytics...</p>
+                </div>
+            </div>
+        );
+    }
+
+    const trendDecisions = analytics.decisionsLastMonth > 0
+        ? Math.round(((analytics.decisionsThisMonth - analytics.decisionsLastMonth) / analytics.decisionsLastMonth) * 100)
         : 0;
 
     // Find max values for normalization
-    const maxVotes = Math.max(...teamAnalytics.participationByMember.map(m => m.votesCount));
+    const maxVotes = Math.max(...analytics.participationByMember.map((m: any) => m.votesCount), 1);
 
     // Calculate pole statistics
-    const poleStats = poles.map(pole => {
-        const poleMembers = users.filter(u => u.poleId === pole.id);
-        const poleDecisions = decisions.filter(d => d.poleId === pole.id);
-        const totalVotes = poleMembers.reduce((sum, member) => {
-            const stats = teamAnalytics.participationByMember.find(p => p.userId === member.id);
-            return sum + (stats?.votesCount || 0);
-        }, 0);
+    const poleStats = polesData.map(pole => {
+        const poleMembers = members.filter(m => m.pole_id === pole.id);
+        const poleDecisions = decisions.filter(d => d.pole_id === pole.id);
+        const totalVotes = analytics.participationByMember
+            .filter((p: any) => poleMembers.some(m => m.id === p.userId))
+            .reduce((sum: number, p: any) => sum + p.votesCount, 0);
         
         return {
-            pole,
+            pole: {
+                id: pole.id,
+                name: pole.name,
+                color: pole.color,
+            },
             memberCount: poleMembers.length,
             decisionCount: poleDecisions.length,
             totalVotes,
@@ -240,34 +367,35 @@ export const Analytics = () => {
         };
     }).sort((a, b) => b.totalVotes - a.totalVotes);
 
-    const totalArguments = teamAnalytics.participationByMember.reduce((sum, m) => sum + m.argumentsCount, 0);
-    const avgArgumentsPerDecision = Math.round((totalArguments / teamAnalytics.totalDecisions) * 10) / 10;
+    const avgArgumentsPerDecision = analytics.totalDecisions > 0
+        ? Math.round((analytics.totalArguments / analytics.totalDecisions) * 10) / 10
+        : 0;
 
     // Top performers
-    const topVoters = [...teamAnalytics.participationByMember]
-        .sort((a, b) => b.votesCount - a.votesCount)
+    const topVoters = [...analytics.participationByMember]
+        .sort((a: any, b: any) => b.votesCount - a.votesCount)
         .slice(0, 5);
     
-    const topContributors = [...teamAnalytics.participationByMember]
-        .sort((a, b) => b.argumentsCount - a.argumentsCount)
+    const topContributors = [...analytics.participationByMember]
+        .sort((a: any, b: any) => b.argumentsCount - a.argumentsCount)
         .slice(0, 5);
     
-    const topCreators = [...teamAnalytics.participationByMember]
-        .sort((a, b) => b.decisionsCreated - a.decisionsCreated)
+    const topCreators = [...analytics.participationByMember]
+        .sort((a: any, b: any) => b.decisionsCreated - a.decisionsCreated)
         .slice(0, 5);
 
-    const getPoleColorClass = (color: string) => {
-        const colors: Record<string, string> = {
-            purple: 'bg-purple-500',
-            pink: 'bg-pink-500',
-            blue: 'bg-blue-500',
-            emerald: 'bg-emerald-500',
-            orange: 'bg-orange-500',
-            cyan: 'bg-cyan-500',
-            yellow: 'bg-yellow-500',
-            red: 'bg-red-500',
+    const getPoleColorClass = (hexColor: string) => {
+        const colorMap: Record<string, string> = {
+            '#a855f7': 'bg-purple-500',
+            '#ec4899': 'bg-pink-500',
+            '#3b82f6': 'bg-blue-500',
+            '#10b981': 'bg-emerald-500',
+            '#f97316': 'bg-orange-500',
+            '#06b6d4': 'bg-cyan-500',
+            '#eab308': 'bg-yellow-500',
+            '#ef4444': 'bg-red-500',
         };
-        return colors[color] || colors.blue;
+        return colorMap[hexColor] || colorMap['#3b82f6'];
     };
 
     return (
@@ -282,14 +410,14 @@ export const Analytics = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
                 <StatCard
                     label="Décisions totales"
-                    value={teamAnalytics.totalDecisions}
-                    subValue={`${teamAnalytics.completedDecisions} terminées`}
+                    value={analytics.totalDecisions}
+                    subValue={`${analytics.completedDecisions} terminées`}
                     icon={Vote}
                     gradient={true}
                 />
                 <StatCard
                     label="Ce mois"
-                    value={teamAnalytics.decisionsThisMonth}
+                    value={analytics.decisionsThisMonth}
                     trend={{ 
                         value: Math.abs(trendDecisions), 
                         positive: trendDecisions >= 0 
@@ -298,13 +426,13 @@ export const Analytics = () => {
                 />
                 <StatCard
                     label="Participation"
-                    value={`${teamAnalytics.averageParticipationRate}%`}
+                    value={`${analytics.averageParticipationRate}%`}
                     subValue="taux moyen"
                     icon={Users}
                 />
                 <StatCard
                     label="Vitesse"
-                    value={`${teamAnalytics.averageTimeToDecision}h`}
+                    value={`${analytics.averageTimeToDecision}h`}
                     subValue="temps moyen"
                     icon={Clock}
                 />
@@ -327,7 +455,7 @@ export const Analytics = () => {
                     </div>
                     <div className="min-h-[220px] mb-6">
                         <BarChart 
-                            data={teamAnalytics.decisionsByMonth.map(d => ({ label: d.month, value: d.count }))}
+                            data={analytics.decisionsByMonth.map((d: any) => ({ label: d.month, value: d.count }))}
                             height={220}
                         />
                     </div>
@@ -335,19 +463,19 @@ export const Analytics = () => {
                     <div className="grid grid-cols-3 gap-3 pt-4 border-t border-zinc-200 dark:border-white/5">
                         <div className="text-center p-3 bg-emerald-500/5 rounded-lg">
                             <p className="text-xl font-bold text-emerald-500">
-                                {Math.max(...teamAnalytics.decisionsByMonth.map(d => d.count))}
+                                {Math.max(...analytics.decisionsByMonth.map((d: any) => d.count))}
                             </p>
                             <p className="text-[10px] text-tertiary mt-1 uppercase tracking-wide">Pic mensuel</p>
                         </div>
                         <div className="text-center p-3 bg-blue-500/5 rounded-lg">
                             <p className="text-xl font-bold text-blue-500">
-                                {Math.round(teamAnalytics.decisionsByMonth.reduce((sum, d) => sum + d.count, 0) / teamAnalytics.decisionsByMonth.length)}
+                                {Math.round(analytics.decisionsByMonth.reduce((sum: number, d: any) => sum + d.count, 0) / analytics.decisionsByMonth.length)}
                             </p>
                             <p className="text-[10px] text-tertiary mt-1 uppercase tracking-wide">Moyenne</p>
                         </div>
                         <div className="text-center p-3 bg-purple-500/5 rounded-lg">
                             <p className="text-xl font-bold text-purple-500">
-                                {teamAnalytics.decisionsByMonth.reduce((sum, d) => sum + d.count, 0)}
+                                {analytics.decisionsByMonth.reduce((sum: number, d: any) => sum + d.count, 0)}
                             </p>
                             <p className="text-[10px] text-tertiary mt-1 uppercase tracking-wide">Total 5 mois</p>
                         </div>
@@ -362,32 +490,32 @@ export const Analytics = () => {
                     </div>
                     <div className="flex items-center justify-center mb-6">
                         <DonutChart 
-                            completed={teamAnalytics.completedDecisions}
-                            active={teamAnalytics.totalDecisions - teamAnalytics.completedDecisions}
-                            total={teamAnalytics.totalDecisions}
+                            completed={analytics.completedDecisions}
+                            active={analytics.totalDecisions - analytics.completedDecisions}
+                            total={analytics.totalDecisions}
                         />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="text-center p-4 bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 rounded-xl border border-emerald-500/20">
                             <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
-                                {teamAnalytics.completedDecisions}
+                                {analytics.completedDecisions}
                             </p>
                             <p className="text-xs text-tertiary mt-2 font-medium">Terminées</p>
                             <div className="mt-3 pt-3 border-t border-emerald-500/20">
                                 <p className="text-lg font-bold text-emerald-500">
-                                    {Math.round((teamAnalytics.completedDecisions / teamAnalytics.totalDecisions) * 100)}%
+                                    {analytics.totalDecisions > 0 ? Math.round((analytics.completedDecisions / analytics.totalDecisions) * 100) : 0}%
                                 </p>
                                 <p className="text-[10px] text-tertiary mt-0.5">Taux de complétion</p>
                             </div>
                         </div>
                         <div className="text-center p-4 bg-gradient-to-br from-blue-500/10 to-blue-500/5 rounded-xl border border-blue-500/20">
                             <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-                                {teamAnalytics.totalDecisions - teamAnalytics.completedDecisions}
+                                {analytics.totalDecisions - analytics.completedDecisions}
                             </p>
                             <p className="text-xs text-tertiary mt-2 font-medium">En cours</p>
                             <div className="mt-3 pt-3 border-t border-blue-500/20">
                                 <p className="text-lg font-bold text-blue-500">
-                                    {Math.round(((teamAnalytics.totalDecisions - teamAnalytics.completedDecisions) / teamAnalytics.totalDecisions) * 100)}%
+                                    {analytics.totalDecisions > 0 ? Math.round(((analytics.totalDecisions - analytics.completedDecisions) / analytics.totalDecisions) * 100) : 0}%
                                 </p>
                                 <p className="text-[10px] text-tertiary mt-0.5">En progression</p>
                             </div>
@@ -521,12 +649,12 @@ export const Analytics = () => {
                         <h2 className="text-base font-semibold text-primary">Participation de l'équipe</h2>
                         <p className="text-xs text-tertiary mt-0.5">Vue détaillée par membre</p>
                     </div>
-                    <span className="text-xs text-tertiary">{users.length} membres</span>
+                    <span className="text-xs text-tertiary">{members.length} membres</span>
                 </div>
                 <div className="space-y-5">
-                    {teamAnalytics.participationByMember
-                        .sort((a, b) => b.votesCount - a.votesCount)
-                        .map((member) => (
+                    {analytics.participationByMember
+                        .sort((a: any, b: any) => b.votesCount - a.votesCount)
+                        .map((member: any) => (
                             <div key={member.userId} className="group">
                                 <div className="flex items-center gap-3 mb-2">
                                     <Avatar
@@ -578,7 +706,7 @@ export const Analytics = () => {
                             <div>
                                 <p className="text-sm font-semibold text-primary">Participation excellente</p>
                                 <p className="text-xs text-secondary mt-1 leading-relaxed">
-                                    {teamAnalytics.averageParticipationRate}% des membres votent sur chaque décision. C'est 2x supérieur à la moyenne du marché.
+                                    {analytics.averageParticipationRate}% des membres votent sur chaque décision. C'est 2x supérieur à la moyenne du marché.
                                 </p>
                             </div>
                         </div>
@@ -590,7 +718,7 @@ export const Analytics = () => {
                             <div>
                                 <p className="text-sm font-semibold text-primary">Décisions ultra-rapides</p>
                                 <p className="text-xs text-secondary mt-1 leading-relaxed">
-                                    Moyenne de {teamAnalytics.averageTimeToDecision}h pour conclure une décision. Votre équipe est {Math.round(48 / teamAnalytics.averageTimeToDecision)}x plus rapide que la moyenne.
+                                    Moyenne de {analytics.averageTimeToDecision}h pour conclure une décision. Votre équipe est {Math.round(48 / analytics.averageTimeToDecision)}x plus rapide que la moyenne.
                                 </p>
                             </div>
                         </div>
@@ -621,7 +749,7 @@ export const Analytics = () => {
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-xs font-medium text-tertiary uppercase tracking-wide">Votes totaux</span>
                                 <span className="text-lg font-bold text-primary">
-                                    {teamAnalytics.participationByMember.reduce((sum, m) => sum + m.votesCount, 0)}
+                                    {analytics.totalVotes}
                                 </span>
                             </div>
                             <div className="h-3 bg-zinc-100 dark:bg-white/5 rounded-full overflow-hidden">
@@ -633,7 +761,7 @@ export const Analytics = () => {
                         <div>
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-xs font-medium text-tertiary uppercase tracking-wide">Arguments totaux</span>
-                                <span className="text-lg font-bold text-primary">{totalArguments}</span>
+                                <span className="text-lg font-bold text-primary">{analytics.totalArguments}</span>
                             </div>
                             <div className="h-3 bg-zinc-100 dark:bg-white/5 rounded-full overflow-hidden">
                                 <div className="h-full bg-gradient-to-r from-purple-500 to-purple-400 rounded-full w-full"></div>
@@ -645,7 +773,7 @@ export const Analytics = () => {
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-xs font-medium text-tertiary uppercase tracking-wide">Décisions créées</span>
                                 <span className="text-lg font-bold text-primary">
-                                    {teamAnalytics.participationByMember.reduce((sum, m) => sum + m.decisionsCreated, 0)}
+                                    {analytics.participationByMember.reduce((sum: number, m: any) => sum + m.decisionsCreated, 0)}
                                 </span>
                             </div>
                             <div className="h-3 bg-zinc-100 dark:bg-white/5 rounded-full overflow-hidden">
@@ -661,7 +789,7 @@ export const Analytics = () => {
                                     <p className="text-xs text-tertiary mt-0.5">7 derniers jours</p>
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-2xl font-bold text-emerald-500">{users.length}</p>
+                                    <p className="text-2xl font-bold text-emerald-500">{members.length}</p>
                                     <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">100%</p>
                                 </div>
                             </div>
