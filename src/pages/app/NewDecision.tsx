@@ -1,32 +1,38 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Plus, Users, Calendar, ArrowLeft, Building2 } from 'lucide-react';
+import { X, Plus, Users, Calendar, ArrowLeft, Building2, Loader2 } from 'lucide-react';
 import { Avatar } from '../../components/app/feedback/Avatar';
 import { TemplateSelector } from '../../components/app/TemplateSelector';
-import { teamMembers, poles, users } from '../../data/mockData';
+import { useTeam, usePoles, useDecisions } from '../../hooks';
 import type { DecisionTemplate } from '../../types';
 
 export const NewDecision = () => {
     const navigate = useNavigate();
+    const { members } = useTeam();
+    const { poles: polesData } = usePoles();
+    const { createDecision } = useDecisions();
+    
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const [selectedTemplate, setSelectedTemplate] = useState<DecisionTemplate | null>(null);
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [options, setOptions] = useState(['', '']);
     const [selectedPole, setSelectedPole] = useState<string>('all');
     const [selectedParticipants, setSelectedParticipants] = useState<string[]>(
-        teamMembers.map(m => m.id)
+        members.map(m => m.id)
     );
     const [deadline, setDeadline] = useState('');
 
     // Mettre à jour les participants quand un pôle est sélectionné
     useEffect(() => {
         if (selectedPole === 'all') {
-            setSelectedParticipants(teamMembers.map(m => m.id));
+            setSelectedParticipants(members.map(m => m.id));
         } else {
-            const poleMembers = users.filter(u => u.poleId === selectedPole).map(u => u.id);
+            const poleMembers = members.filter(u => u.pole_id === selectedPole).map(u => u.id);
             setSelectedParticipants(poleMembers);
         }
-    }, [selectedPole]);
+    }, [selectedPole, members]);
 
     // Apply template when selected
     useEffect(() => {
@@ -62,9 +68,45 @@ export const NewDecision = () => {
         );
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        navigate('/app/decisions');
+        setError(null);
+        setIsSubmitting(true);
+
+        try {
+            // Validation
+            if (!title.trim()) {
+                throw new Error('Le titre est requis');
+            }
+            if (options.filter(o => o.trim()).length < 2) {
+                throw new Error('Au moins 2 options sont requises');
+            }
+            if (!deadline) {
+                throw new Error('La deadline est requise');
+            }
+            if (selectedParticipants.length === 0) {
+                throw new Error('Au moins un participant est requis');
+            }
+
+            // Create decision
+            const decisionData = {
+                title: title.trim(),
+                context: description.trim() || undefined,
+                deadline: new Date(deadline),
+                pole_id: selectedPole === 'all' ? undefined : selectedPole,
+                options: options.filter(o => o.trim()),
+                participant_ids: selectedParticipants,
+            };
+
+            await createDecision(decisionData);
+            
+            // Success! Navigate to decisions list
+            navigate('/app/decisions');
+        } catch (err: any) {
+            console.error('Error creating decision:', err);
+            setError(err.message || 'Une erreur est survenue');
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -198,7 +240,7 @@ export const NewDecision = () => {
                                 className="w-full px-3 py-2.5 sm:py-2 bg-background border border-zinc-200 dark:border-white/5 rounded-lg text-sm text-primary focus:outline-none focus:border-emerald-500/50 transition-colors"
                             >
                                 <option value="all">Toute l'équipe</option>
-                                {poles.map((pole) => (
+                                {polesData.map((pole) => (
                                     <option key={pole.id} value={pole.id}>
                                         {pole.name}
                                     </option>
@@ -206,7 +248,7 @@ export const NewDecision = () => {
                             </select>
                             {selectedPole !== 'all' && (
                                 <p className="text-xs text-tertiary mt-2">
-                                    {poles.find(p => p.id === selectedPole)?.description}
+                                    {polesData.find(p => p.id === selectedPole)?.description}
                                 </p>
                             )}
                         </section>
@@ -226,9 +268,9 @@ export const NewDecision = () => {
                                 </p>
                             )}
                             <div className="grid grid-cols-2 sm:grid-cols-1 gap-1 max-h-48 overflow-y-auto">
-                                {teamMembers
+                                {members
                                     .filter(member => 
-                                        selectedPole === 'all' || member.poleId === selectedPole
+                                        selectedPole === 'all' || member.pole_id === selectedPole
                                     )
                                     .map((member) => (
                                         <label
@@ -242,26 +284,41 @@ export const NewDecision = () => {
                                                 className="w-4 sm:w-3.5 h-4 sm:h-3.5 rounded border-zinc-300 dark:border-white/20 bg-background text-emerald-500 focus:ring-emerald-500/20"
                                             />
                                             <Avatar
-                                                firstName={member.firstName}
-                                                lastName={member.lastName}
-                                                color={member.avatarColor}
+                                                firstName={member.first_name}
+                                                lastName={member.last_name}
+                                                color={member.avatar_color || undefined}
                                                 size="xs"
                                             />
                                             <span className="text-xs text-primary truncate">
-                                                {member.firstName}
+                                                {member.first_name}
                                             </span>
                                         </label>
                                     ))}
                             </div>
                         </section>
 
+                        {/* Error message */}
+                        {error && (
+                            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                                <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+                            </div>
+                        )}
+
                         {/* Submit Button - Sticky on mobile */}
                         <div className="lg:sticky lg:top-4">
                             <button
                                 type="submit"
-                                className="w-full py-3 sm:py-2.5 bg-emerald-500 hover:bg-emerald-400 text-white font-medium rounded-lg transition-colors"
+                                disabled={isSubmitting}
+                                className="w-full py-3 sm:py-2.5 bg-emerald-500 hover:bg-emerald-400 disabled:bg-zinc-300 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
                             >
-                                Lancer la décision
+                                {isSubmitting ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Création...
+                                    </>
+                                ) : (
+                                    'Lancer la décision'
+                                )}
                             </button>
                         </div>
                     </div>
