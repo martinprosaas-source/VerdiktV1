@@ -1,16 +1,32 @@
 import { useState } from 'react';
-import { Search, Archive } from 'lucide-react';
+import { Search, Archive, Loader2 } from 'lucide-react';
 import { DecisionCard } from '../../components/app/cards/DecisionCard';
 import { EmptyState } from '../../components/app/feedback/EmptyState';
-import { getCompletedDecisions } from '../../data/mockData';
+import { useDecisions } from '../../hooks';
+import { adaptDecisionForComponents } from '../../utils/decisionAdapter';
 
 export const History = () => {
     const [search, setSearch] = useState('');
-    const completedDecisions = getCompletedDecisions();
+    const { decisions, loading } = useDecisions();
+    
+    const completedDecisions = decisions.filter(d => 
+        d.status === 'completed' || d.status === 'archived'
+    );
 
     const filteredDecisions = completedDecisions.filter(decision =>
         decision.title.toLowerCase().includes(search.toLowerCase())
     );
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                    <Loader2 className="w-8 h-8 animate-spin text-emerald-500 mx-auto mb-4" />
+                    <p className="text-sm text-secondary">Chargement de l'historique...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div>
@@ -33,7 +49,7 @@ export const History = () => {
             {filteredDecisions.length > 0 ? (
                 <div className="space-y-2">
                     {filteredDecisions.map((decision) => (
-                        <DecisionCard key={decision.id} decision={decision} />
+                        <DecisionCard key={decision.id} decision={adaptDecisionForComponents(decision)} />
                     ))}
                 </div>
             ) : (

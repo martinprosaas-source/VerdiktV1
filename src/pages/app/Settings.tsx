@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Save, Shield, Info, Plug, ExternalLink, CheckCircle2, Clock } from 'lucide-react';
+import { Save, Shield, Info, Plug, ExternalLink, CheckCircle2, Clock, Loader2 } from 'lucide-react';
 import { Avatar } from '../../components/app/feedback/Avatar';
-import { currentUser, users } from '../../data/mockData';
+import { useAuth, useTeam } from '../../hooks';
 import { SlackLogo, NotionLogo, GoogleCalendarLogo } from '../../components/icons/IntegrationLogos';
 
 const roleLabels = {
@@ -81,6 +81,25 @@ const integrations: Integration[] = [
 
 export const Settings = () => {
     const [activeTab, setActiveTab] = useState<'profile' | 'workspace' | 'permissions' | 'integrations'>('profile');
+    const { profile, loading } = useAuth();
+    const { members, team } = useTeam();
+
+    if (loading || !profile) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                    <Loader2 className="w-8 h-8 animate-spin text-emerald-500 mx-auto mb-4" />
+                    <p className="text-sm text-secondary">Chargement des paramètres...</p>
+                </div>
+            </div>
+        );
+    }
+
+    const roleLabels = {
+        owner: { label: 'Propriétaire', color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400' },
+        admin: { label: 'Admin', color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400' },
+        member: { label: 'Membre', color: 'bg-zinc-500/10 text-zinc-600 dark:text-zinc-400' },
+    };
 
     const getStatusBadge = (status: Integration['status']) => {
         switch (status) {
@@ -139,18 +158,18 @@ export const Settings = () => {
                         
                         <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-5">
                             <Avatar 
-                                firstName={currentUser.firstName}
-                                lastName={currentUser.lastName}
-                                color={currentUser.avatarColor}
+                                firstName={profile.first_name || ''}
+                                lastName={profile.last_name || ''}
+                                color={profile.avatar_color}
                                 size="lg"
                             />
                             <div>
                                 <p className="text-sm font-medium text-primary">
-                                    {currentUser.firstName} {currentUser.lastName}
+                                    {profile.first_name} {profile.last_name}
                                 </p>
-                                <p className="text-xs text-tertiary">{currentUser.email}</p>
-                                <span className={`inline-block mt-1 px-2 py-0.5 text-[10px] font-medium rounded ${roleLabels[currentUser.role].color}`}>
-                                    {roleLabels[currentUser.role].label}
+                                <p className="text-xs text-tertiary">{profile.email}</p>
+                                <span className={`inline-block mt-1 px-2 py-0.5 text-[10px] font-medium rounded ${roleLabels[profile.role as 'owner' | 'admin' | 'member'].color}`}>
+                                    {roleLabels[profile.role as 'owner' | 'admin' | 'member'].label}
                                 </span>
                             </div>
                         </div>
@@ -163,7 +182,7 @@ export const Settings = () => {
                                     </label>
                                     <input
                                         type="text"
-                                        defaultValue={currentUser.firstName}
+                                        defaultValue={profile.first_name || ''}
                                         className="w-full px-3 py-2.5 sm:py-2 bg-background border border-zinc-200 dark:border-white/5 rounded-lg text-sm text-primary focus:outline-none focus:border-emerald-500/50 transition-colors"
                                     />
                                 </div>
@@ -173,7 +192,7 @@ export const Settings = () => {
                                     </label>
                                     <input
                                         type="text"
-                                        defaultValue={currentUser.lastName}
+                                        defaultValue={profile.last_name || ''}
                                         className="w-full px-3 py-2.5 sm:py-2 bg-background border border-zinc-200 dark:border-white/5 rounded-lg text-sm text-primary focus:outline-none focus:border-emerald-500/50 transition-colors"
                                     />
                                 </div>
@@ -184,7 +203,7 @@ export const Settings = () => {
                                 </label>
                                 <input
                                     type="email"
-                                    defaultValue={currentUser.email}
+                                    defaultValue={profile.email || ''}
                                     className="w-full px-3 py-2.5 sm:py-2 bg-background border border-zinc-200 dark:border-white/5 rounded-lg text-sm text-primary focus:outline-none focus:border-emerald-500/50 transition-colors"
                                 />
                             </div>
@@ -247,7 +266,7 @@ export const Settings = () => {
                                 </label>
                                 <input
                                     type="text"
-                                    defaultValue="TechScale"
+                                    defaultValue={team?.name || 'Mon équipe'}
                                     className="w-full px-3 py-2 bg-background border border-zinc-200 dark:border-white/5 rounded-lg text-sm text-primary focus:outline-none focus:border-emerald-500/50 transition-colors"
                                 />
                             </div>
@@ -319,7 +338,7 @@ export const Settings = () => {
                     <section className="bg-card border border-zinc-200 dark:border-white/5 rounded-lg p-5">
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-sm font-medium text-primary">Rôles des membres</h2>
-                            <span className="text-xs text-tertiary">{users.length} membres</span>
+                            <span className="text-xs text-tertiary">{members.length} membres</span>
                         </div>
 
                         <div className="overflow-x-auto">
@@ -333,29 +352,29 @@ export const Settings = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {users.map((user) => (
+                                    {members.map((user) => (
                                         <tr key={user.id} className="border-b border-zinc-100 dark:border-white/[0.02] last:border-0">
                                             <td className="py-3">
                                                 <div className="flex items-center gap-2">
                                                     <Avatar
-                                                        firstName={user.firstName}
-                                                        lastName={user.lastName}
-                                                        color={user.avatarColor}
+                                                        firstName={user.first_name}
+                                                        lastName={user.last_name}
+                                                        color={user.avatar_color}
                                                         size="sm"
                                                     />
                                                     <span className="text-sm text-primary">
-                                                        {user.firstName} {user.lastName}
+                                                        {user.first_name} {user.last_name}
                                                     </span>
                                                 </div>
                                             </td>
                                             <td className="py-3 text-sm text-tertiary">{user.email}</td>
                                             <td className="py-3">
-                                                <span className={`px-2 py-0.5 text-[10px] font-medium rounded ${roleLabels[user.role].color}`}>
-                                                    {roleLabels[user.role].label}
+                                                <span className={`px-2 py-0.5 text-[10px] font-medium rounded ${roleLabels[user.role as 'owner' | 'admin' | 'member'].color}`}>
+                                                    {roleLabels[user.role as 'owner' | 'admin' | 'member'].label}
                                                 </span>
                                             </td>
                                             <td className="py-3">
-                                                {currentUser.role === 'owner' && user.id !== currentUser.id && (
+                                                {profile.role === 'owner' && user.id !== profile.id && (
                                                     <select
                                                         defaultValue={user.role}
                                                         className="px-2 py-1 text-xs bg-background border border-zinc-200 dark:border-white/5 rounded text-primary"
