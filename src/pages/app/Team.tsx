@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { UserPlus, MoreVertical, Clock, Mail, X, RefreshCw } from 'lucide-react';
 import { Avatar } from '../../components/app/feedback/Avatar';
 import { InviteModal } from '../../components/app/InviteModal';
-import { teamMembers, pendingInvites, poles } from '../../data/mockData';
+import { useTeam, usePoles } from '../../hooks';
 
 const getRoleBadge = (role: string) => {
     const styles = {
@@ -24,25 +24,29 @@ const getRoleBadge = (role: string) => {
     );
 };
 
-const getPoleBadge = (poleId?: string) => {
+const getPoleBadge = (poleId: string | null | undefined, polesData: any[]) => {
     if (!poleId) return null;
     
-    const pole = poles.find(p => p.id === poleId);
+    const pole = polesData.find(p => p.id === poleId);
     if (!pole) return null;
 
-    const colorStyles: Record<string, string> = {
-        purple: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
-        pink: 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20',
-        blue: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
-        emerald: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
-        orange: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20',
-        cyan: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20',
-        yellow: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20',
-        red: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
+    // Convert hex color to tailwind-friendly class
+    const getColorClass = (hexColor: string) => {
+        const colorMap: Record<string, string> = {
+            '#a855f7': 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
+            '#ec4899': 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20',
+            '#3b82f6': 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
+            '#10b981': 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+            '#f97316': 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20',
+            '#06b6d4': 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20',
+            '#eab308': 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20',
+            '#ef4444': 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
+        };
+        return colorMap[hexColor] || 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20';
     };
 
     return (
-        <span className={`px-2 py-0.5 text-xs font-medium rounded border ${colorStyles[pole.color] || colorStyles.blue}`}>
+        <span className={`px-2 py-0.5 text-xs font-medium rounded border ${getColorClass(pole.color)}`}>
             {pole.name.replace('Pôle ', '')}
         </span>
     );
@@ -81,10 +85,26 @@ const formatRelativeDate = (date: Date) => {
 };
 
 export const Team = () => {
+    const { members, loading } = useTeam();
+    const { poles: polesData } = usePoles();
     const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<'members' | 'pending'>('members');
 
+    // Placeholder for pending invites (would come from Supabase)
+    const pendingInvites: any[] = [];
+
     const isExpired = (expiresAt: Date) => new Date() > expiresAt;
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                    <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                    <p className="text-sm text-secondary">Chargement de l'équipe...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div>
@@ -93,7 +113,7 @@ export const Team = () => {
                 <div>
                     <h1 className="text-lg sm:text-xl font-semibold text-primary">Équipe</h1>
                     <p className="text-sm text-tertiary">
-                        {teamMembers.length} membres • {pendingInvites.length} en attente
+                        {members.length} membres • {pendingInvites.length} en attente
                     </p>
                 </div>
                 <button 
@@ -115,7 +135,7 @@ export const Team = () => {
                             : 'text-tertiary hover:text-secondary'
                     }`}
                 >
-                    Membres ({teamMembers.length})
+                    Membres ({members.length})
                 </button>
                 <button
                     onClick={() => setActiveTab('pending')}
@@ -138,7 +158,7 @@ export const Team = () => {
                 <>
                     {/* Mobile Cards View - Members */}
             <div className="sm:hidden space-y-3">
-                {teamMembers.map((member) => (
+                {members.map((member) => (
                     <div 
                         key={member.id} 
                         className="bg-card border border-zinc-200 dark:border-white/5 rounded-lg p-4"
@@ -146,14 +166,14 @@ export const Team = () => {
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <Avatar 
-                                    firstName={member.firstName}
-                                    lastName={member.lastName}
-                                    color={member.avatarColor}
+                                    firstName={member.first_name}
+                                    lastName={member.last_name}
+                                    color={member.avatar_color || undefined}
                                     size="sm"
                                 />
                                 <div>
                                     <p className="text-sm font-medium text-primary">
-                                        {member.firstName} {member.lastName}
+                                        {member.first_name} {member.last_name}
                                     </p>
                                     <p className="text-xs text-tertiary">{member.email}</p>
                                 </div>
@@ -165,10 +185,10 @@ export const Team = () => {
                         <div className="flex items-center justify-between mt-3 pt-3 border-t border-zinc-200 dark:border-white/5">
                             <div className="flex flex-wrap items-center gap-2">
                                 {getRoleBadge(member.role)}
-                                {getPoleBadge(member.poleId)}
+                                {getPoleBadge(member.pole_id, polesData)}
                             </div>
                             <span className="text-xs text-tertiary">
-                                {formatDate(member.joinedAt)}
+                                {formatDate(new Date(member.created_at))}
                             </span>
                         </div>
                     </div>
@@ -199,18 +219,18 @@ export const Team = () => {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-200 dark:divide-white/5">
-                        {teamMembers.map((member) => (
+                        {members.map((member) => (
                             <tr key={member.id} className="hover:bg-zinc-50 dark:hover:bg-white/[0.02] transition-colors">
                                 <td className="px-4 py-3">
                                     <div className="flex items-center gap-3">
                                         <Avatar 
-                                            firstName={member.firstName}
-                                            lastName={member.lastName}
-                                            color={member.avatarColor}
+                                            firstName={member.first_name}
+                                            lastName={member.last_name}
+                                            color={member.avatar_color || undefined}
                                             size="sm"
                                         />
                                         <span className="text-sm font-medium text-primary">
-                                            {member.firstName} {member.lastName}
+                                            {member.first_name} {member.last_name}
                                         </span>
                                     </div>
                                 </td>
@@ -221,10 +241,10 @@ export const Team = () => {
                                     {getRoleBadge(member.role)}
                                 </td>
                                 <td className="px-4 py-3 hidden xl:table-cell">
-                                    {getPoleBadge(member.poleId)}
+                                    {getPoleBadge(member.pole_id, polesData)}
                                 </td>
                                 <td className="px-4 py-3 text-sm text-tertiary hidden lg:table-cell">
-                                    {formatDate(member.joinedAt)}
+                                    {formatDate(new Date(member.created_at))}
                                 </td>
                                 <td className="px-4 py-3">
                                     <button className="p-1 text-tertiary hover:text-primary transition-colors rounded">

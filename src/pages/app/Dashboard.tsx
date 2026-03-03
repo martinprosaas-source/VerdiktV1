@@ -3,17 +3,48 @@ import { Plus, Sparkles, Vote, BarChart3, Calendar } from 'lucide-react';
 import { StatCard } from '../../components/app/cards/StatCard';
 import { DecisionCard } from '../../components/app/cards/DecisionCard';
 import { EmptyState } from '../../components/app/feedback/EmptyState';
-import { 
-    currentUser, 
-    getActiveDecisions, 
-    getPendingVotesCount,
-    getDecisionsThisMonth 
-} from '../../data/mockData';
+import { useAuth, useDecisions } from '../../hooks';
+import { adaptDecisionForComponents } from '../../utils/decisionAdapter';
+import { useMemo } from 'react';
 
 export const Dashboard = () => {
-    const activeDecisions = getActiveDecisions();
-    const pendingVotes = getPendingVotesCount(currentUser.id);
-    const decisionsThisMonth = getDecisionsThisMonth();
+    const { profile } = useAuth();
+    const { decisions, loading } = useDecisions();
+
+    // Calculate stats from real data
+    const stats = useMemo(() => {
+        const now = new Date();
+        const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        
+        const activeDecisions = decisions.filter(d => d.status === 'active');
+        
+        // Count decisions created this month
+        const decisionsThisMonth = decisions.filter(d => {
+            const createdAt = new Date(d.created_at);
+            return createdAt >= thisMonth && createdAt <= now;
+        }).length;
+
+        // For pending votes, we'd need to check which decisions the user hasn't voted on yet
+        // For now, showing active decisions count as a placeholder
+        const pendingVotes = activeDecisions.length;
+
+        return {
+            activeDecisions,
+            pendingVotes,
+            decisionsThisMonth,
+        };
+    }, [decisions]);
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                    <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                    <p className="text-sm text-secondary">Chargement...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div>
@@ -21,7 +52,7 @@ export const Dashboard = () => {
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-6">
                 <div>
                     <h1 className="text-lg sm:text-xl font-semibold text-primary">
-                        Bonjour {currentUser.firstName}
+                        Bonjour {profile?.first_name || 'Utilisateur'}
                     </h1>
                     <p className="text-sm text-secondary">
                         Voici un aperçu de vos décisions
@@ -41,17 +72,17 @@ export const Dashboard = () => {
                 <StatCard
                     icon={Vote}
                     label="En attente de ton vote"
-                    value={pendingVotes}
+                    value={stats.pendingVotes}
                 />
                 <StatCard
                     icon={BarChart3}
                     label="Décisions actives"
-                    value={activeDecisions.length}
+                    value={stats.activeDecisions.length}
                 />
                 <StatCard
                     icon={Calendar}
                     label="Décisions ce mois"
-                    value={decisionsThisMonth}
+                    value={stats.decisionsThisMonth}
                 />
             </div>
 
@@ -69,10 +100,10 @@ export const Dashboard = () => {
                     </Link>
                 </div>
 
-                {activeDecisions.length > 0 ? (
+                {stats.activeDecisions.length > 0 ? (
                     <div className="space-y-2">
-                        {activeDecisions.map((decision) => (
-                            <DecisionCard key={decision.id} decision={decision} />
+                        {stats.activeDecisions.map((decision) => (
+                            <DecisionCard key={decision.id} decision={adaptDecisionForComponents(decision)} />
                         ))}
                     </div>
                 ) : (
