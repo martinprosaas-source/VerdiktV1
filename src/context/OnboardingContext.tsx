@@ -1,5 +1,12 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 
+export interface Pole {
+    id: string;
+    name: string;
+    description: string;
+    color: string;
+}
+
 export interface OnboardingData {
     // Step 1 - Profile
     firstName: string;
@@ -12,14 +19,18 @@ export interface OnboardingData {
     teamSize: string;
     workspaceSlug: string;
     logo: string | null;
+    password: string;
     
-    // Step 3 - Invitations
+    // Step 3 - Poles
+    poles: Pole[];
+    
+    // Step 4 - Invitations
     inviteEmails: string[];
     
-    // Step 4 - Integrations
+    // Step 5 - Integrations
     connectedIntegrations: string[];
     
-    // Step 5 - First Decision
+    // Step 6 - First Decision
     firstDecisionQuestion: string;
 }
 
@@ -44,6 +55,33 @@ const defaultData: OnboardingData = {
     teamSize: '',
     workspaceSlug: '',
     logo: null,
+    password: '',
+    poles: [
+        {
+            id: 'pole-1',
+            name: 'Pôle Marketing & Communication',
+            description: 'Stratégie marketing, communication, acquisition clients',
+            color: '#a855f7', // purple
+        },
+        {
+            id: 'pole-2',
+            name: 'Pôle Design & Créa',
+            description: 'Design produit, identité visuelle, UX/UI',
+            color: '#ec4899', // pink
+        },
+        {
+            id: 'pole-3',
+            name: 'Pôle Tech & Produit',
+            description: 'Développement, infrastructure, produit',
+            color: '#3b82f6', // blue
+        },
+        {
+            id: 'pole-4',
+            name: 'Pôle Ops & Finance',
+            description: 'Opérations, finance, RH, juridique',
+            color: '#10b981', // emerald
+        },
+    ],
     inviteEmails: [],
     connectedIntegrations: [],
     firstDecisionQuestion: '',
@@ -55,7 +93,7 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
     const [data, setData] = useState<OnboardingData>(defaultData);
     const [currentStep, setCurrentStep] = useState(1);
     const [canGoNext, setCanGoNext] = useState(false);
-    const totalSteps = 5;
+    const totalSteps = 6;
 
     const updateData = (updates: Partial<OnboardingData>) => {
         setData(prev => ({ ...prev, ...updates }));

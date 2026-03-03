@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useOnboarding } from '../../../context/OnboardingContext';
-import { Building2, Upload, Users } from 'lucide-react';
+import { Building2, Upload, Users, Lock, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const teamSizes = [
@@ -13,12 +13,14 @@ const teamSizes = [
 export const StepWorkspace = () => {
     const { data, updateData, setCanGoNext } = useOnboarding();
     const [logoPreview, setLogoPreview] = useState<string | null>(data.logo);
+    const [showPassword, setShowPassword] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-        const isValid = data.teamName.trim() !== '' && data.teamSize !== '';
+        const isPasswordValid = data.password.length >= 8;
+        const isValid = data.teamName.trim() !== '' && data.teamSize !== '' && isPasswordValid;
         setCanGoNext(isValid);
-    }, [data.teamName, data.teamSize, setCanGoNext]);
+    }, [data.teamName, data.teamSize, data.password, setCanGoNext]);
 
     const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -144,6 +146,52 @@ export const StepWorkspace = () => {
                         </motion.button>
                     ))}
                 </div>
+            </div>
+
+            {/* Password */}
+            <div>
+                <label className="block text-sm font-medium text-primary mb-2">
+                    Choisissez un mot de passe <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-tertiary" />
+                    <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={data.password}
+                        onChange={(e) => updateData({ password: e.target.value })}
+                        placeholder="Minimum 8 caractères"
+                        className="w-full pl-11 pr-12 py-3 bg-card border border-zinc-200 dark:border-white/10 rounded-xl text-primary placeholder:text-tertiary focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                    />
+                    <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-tertiary hover:text-secondary transition-colors"
+                    >
+                        {showPassword ? (
+                            <EyeOff className="w-5 h-5" />
+                        ) : (
+                            <Eye className="w-5 h-5" />
+                        )}
+                    </button>
+                </div>
+                {data.password && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        className="mt-2"
+                    >
+                        <div className="flex items-center gap-2">
+                            <div className={`h-1 flex-1 rounded-full transition-colors ${
+                                data.password.length >= 8 ? 'bg-emerald-500' : 'bg-zinc-200 dark:bg-white/10'
+                            }`} />
+                        </div>
+                        <p className={`text-xs mt-1 ${
+                            data.password.length >= 8 ? 'text-emerald-500' : 'text-tertiary'
+                        }`}>
+                            {data.password.length >= 8 ? '✓ Mot de passe sécurisé' : `${8 - data.password.length} caractère${8 - data.password.length > 1 ? 's' : ''} restant${8 - data.password.length > 1 ? 's' : ''}`}
+                        </p>
+                    </motion.div>
+                )}
             </div>
         </div>
     );

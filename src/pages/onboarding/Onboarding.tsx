@@ -3,39 +3,127 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useOnboarding, OnboardingProvider } from '../../context/OnboardingContext';
 import { StepProfile } from './steps/StepProfile';
 import { StepWorkspace } from './steps/StepWorkspace';
+import { StepPoles } from './steps/StepPoles';
 import { StepInvite } from './steps/StepInvite';
 import { StepIntegrations } from './steps/StepIntegrations';
 import { StepFirstDecision } from './steps/StepFirstDecision';
-import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { Logo } from '../../components/Logo';
+import { supabase } from '../../lib/supabase';
 
 const stepTitles = [
     { title: 'Votre profil', subtitle: 'Parlez-nous de vous' },
     { title: 'Votre équipe', subtitle: 'Créez votre espace' },
+    { title: 'Vos pôles', subtitle: 'Organisez votre équipe' },
     { title: 'Invitations', subtitle: 'Invitez vos coéquipiers' },
     { title: 'Intégrations', subtitle: 'Connectez vos outils' },
     { title: 'Première décision', subtitle: 'Lancez-vous !' },
 ];
 
 const OnboardingContent = () => {
-    const { currentStep, totalSteps, nextStep, prevStep, canGoNext } = useOnboarding();
+    const { data, currentStep, totalSteps, nextStep, prevStep, canGoNext } = useOnboarding();
     const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
+
+    const generateSlug = (name: string) => {
+        return name.toLowerCase()
+            .replace(/[àáâãäå]/g, 'a')
+            .replace(/[èéêë]/g, 'e')
+            .replace(/[ìíîï]/g, 'i')
+            .replace(/[òóôõö]/g, 'o')
+            .replace(/[ùúûü]/g, 'u')
+            .replace(/[^a-z0-9]/g, '-')
+            .replace(/-+/g, '-')
+            .replace(/^-|-$/g, '');
+    };
 
     const handleNext = async () => {
         if (currentStep === totalSteps) {
             setIsLoading(true);
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            navigate('/app');
+            setError(null);
+
+            try {
+                // 1. Get current user
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) throw new Error('User not authenticated');
+
+                // 2. Update password
+                const { error: passwordError } = await supabase.auth.updateUser({
+                    password: data.password,
+                });
+                if (passwordError) throw passwordError;
+
+                // 3. Create team
+                const slug = generateSlug(data.teamName);
+                const { data: team, error: teamError } = await supabase
+                    .from('teams')
+                    .insert({
+                        name: data.teamName,
+                        slug: slug,
+                    })
+                    .select()
+                    .single();
+
+                if (teamError) throw teamError;
+                if (!team) throw new Error('Failed to create team');
+
+                // 4. Create poles
+                const polesData = data.poles.map(pole => ({
+                    team_id: team.id,
+                    name: pole.name,
+                    description: pole.description,
+                    color: pole.color,
+                }));
+
+                const { error: polesError } = await supabase
+                    .from('poles')
+                    .insert(polesData);
+
+                if (polesError) throw polesError;
+
+                // 5. Update user profile
+                const { error: userError } = await supabase
+                    .from('users')
+                    .update({
+                        team_id: team.id,
+                        first_name: data.firstName,
+                        last_name: data.lastName,
+                        role: 'owner',
+                    })
+                    .eq('id', user.id);
+
+                if (userError) throw userError;
+
+                // 6. Mark onboarding as completed
+                const { error: metadataError } = await supabase.auth.updateUser({
+                    data: {
+                        onboarding_completed: true,
+                        is_beta_user: true,
+                    }
+                });
+
+                if (metadataError) throw metadataError;
+
+                // 7. Send invitations (if any)
+                // Note: This would require admin access, so we'll skip for now
+                // and handle invitations after onboarding
+
+                // Success! Navigate to app
+                navigate('/app');
+            } catch (err: any) {
+                console.error('Onboarding error:', err);
+                setError(err.message || 'Une erreur est survenue. Veuillez réessayer.');
+                setIsLoading(false);
+            }
         } else {
             nextStep();
         }
     };
 
     const handleSkip = () => {
-        if (currentStep === 3 || currentStep === 4) {
+        if (currentStep === 3 || currentStep === 4 || currentStep === 5) {
             nextStep();
         }
     };
@@ -47,10 +135,12 @@ const OnboardingContent = () => {
             case 2:
                 return <StepWorkspace />;
             case 3:
-                return <StepInvite />;
+                return <StepPoles />;
             case 4:
-                return <StepIntegrations />;
+                return <StepInvite />;
             case 5:
+                return <StepIntegrations />;
+            case 6:
                 return <StepFirstDecision />;
             default:
                 return <StepProfile />;
@@ -71,8 +161,12 @@ const OnboardingContent = () => {
 
                 <div className="relative z-10 flex flex-col h-full">
                     {/* Logo */}
-                    <Link to="/" className="block mb-16">
+                    <Link to="/" className="flex items-center gap-3 mb-16">
                         <img src="/Logo FN verdikt.png" alt="Verdikt" className="h-11 object-contain" />
+                        <span className="px-2.5 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-medium rounded-full flex items-center gap-1">
+                            <Sparkles className="w-3 h-3" />
+                            Beta
+                        </span>
                     </Link>
 
                     {/* Progress steps */}
@@ -129,7 +223,13 @@ const OnboardingContent = () => {
                 {/* Mobile header */}
                 <div className="lg:hidden p-4 border-b border-zinc-200 dark:border-white/5">
                     <div className="flex items-center justify-between mb-4">
-                        <Logo size="sm" linkTo="/" />
+                        <div className="flex items-center gap-2">
+                            <Logo size="sm" linkTo="/" />
+                            <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-500 text-xs font-medium rounded-full flex items-center gap-1">
+                                <Sparkles className="w-2.5 h-2.5" />
+                                Beta
+                            </span>
+                        </div>
                         <span className="text-sm text-tertiary">
                             Étape {currentStep}/{totalSteps}
                         </span>
@@ -178,13 +278,27 @@ const OnboardingContent = () => {
                             </motion.div>
                         </AnimatePresence>
 
+                        {/* Error message */}
+                        {error && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="mt-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl"
+                            >
+                                <p className="text-sm text-red-600 dark:text-red-400">
+                                    {error}
+                                </p>
+                            </motion.div>
+                        )}
+
                         {/* Navigation buttons */}
                         <div className="flex items-center justify-between mt-10 pt-6 border-t border-zinc-200 dark:border-white/5">
                             <div>
                                 {currentStep > 1 && (
                                     <button
                                         onClick={prevStep}
-                                        className="flex items-center gap-2 px-4 py-2 text-secondary hover:text-primary transition-colors"
+                                        disabled={isLoading}
+                                        className="flex items-center gap-2 px-4 py-2 text-secondary hover:text-primary transition-colors disabled:opacity-50"
                                     >
                                         <ArrowLeft className="w-4 h-4" />
                                         Retour
@@ -193,10 +307,11 @@ const OnboardingContent = () => {
                             </div>
 
                             <div className="flex items-center gap-3">
-                                {(currentStep === 3 || currentStep === 4) && (
+                                {(currentStep === 3 || currentStep === 4 || currentStep === 5) && (
                                     <button
                                         onClick={handleSkip}
-                                        className="px-4 py-2 text-tertiary hover:text-secondary transition-colors"
+                                        disabled={isLoading}
+                                        className="px-4 py-2 text-tertiary hover:text-secondary transition-colors disabled:opacity-50"
                                     >
                                         Passer
                                     </button>
@@ -204,11 +319,11 @@ const OnboardingContent = () => {
                                 <motion.button
                                     onClick={handleNext}
                                     disabled={!canGoNext || isLoading}
-                                    whileHover={{ scale: canGoNext ? 1.02 : 1 }}
-                                    whileTap={{ scale: canGoNext ? 0.98 : 1 }}
+                                    whileHover={{ scale: canGoNext && !isLoading ? 1.02 : 1 }}
+                                    whileTap={{ scale: canGoNext && !isLoading ? 0.98 : 1 }}
                                     className={`
                                         flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all
-                                        ${canGoNext 
+                                        ${canGoNext && !isLoading
                                             ? 'bg-emerald-500 hover:bg-emerald-400 text-white' 
                                             : 'bg-zinc-200 dark:bg-white/10 text-zinc-400 dark:text-white/30 cursor-not-allowed'}
                                     `}
@@ -217,7 +332,7 @@ const OnboardingContent = () => {
                                         <Loader2 className="w-5 h-5 animate-spin" />
                                     ) : (
                                         <>
-                                            {currentStep === totalSteps ? 'Lancer ma première décision' : 'Continuer'}
+                                            {currentStep === totalSteps ? 'Finaliser mon espace' : 'Continuer'}
                                             <ArrowRight className="w-4 h-4" />
                                         </>
                                     )}
