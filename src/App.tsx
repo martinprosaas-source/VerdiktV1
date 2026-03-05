@@ -9,6 +9,7 @@ import { Landing } from './pages/Landing';
 // Auth pages
 import { Login } from './pages/auth/Login';
 import { Register } from './pages/auth/Register';
+import { Signup } from './pages/Signup';
 import { Onboarding } from './pages/onboarding/Onboarding';
 
 // App pages
@@ -40,6 +41,7 @@ function App() {
             {/* Auth routes (ready for production) */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/signup" element={<Signup />} />
             
             {/* Onboarding - protected, requires auth */}
             <Route path="/onboarding" element={

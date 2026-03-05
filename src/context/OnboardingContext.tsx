@@ -19,7 +19,6 @@ export interface OnboardingData {
     teamSize: string;
     workspaceSlug: string;
     logo: string | null;
-    password: string;
     
     // Step 3 - Poles
     poles: Pole[];
@@ -55,7 +54,6 @@ const defaultData: OnboardingData = {
     teamSize: '',
     workspaceSlug: '',
     logo: null,
-    password: '',
     poles: [
         {
             id: 'pole-1',

@@ -49,13 +49,7 @@ const OnboardingContent = () => {
                 const { data: { user } } = await supabase.auth.getUser();
                 if (!user) throw new Error('User not authenticated');
 
-                // 2. Update password
-                const { error: passwordError } = await supabase.auth.updateUser({
-                    password: data.password,
-                });
-                if (passwordError) throw passwordError;
-
-                // 3. Create team
+                // 2. Create team
                 const slug = generateSlug(data.teamName);
                 const { data: team, error: teamError } = await supabase
                     .from('teams')
@@ -69,7 +63,7 @@ const OnboardingContent = () => {
                 if (teamError) throw teamError;
                 if (!team) throw new Error('Failed to create team');
 
-                // 4. Create poles
+                // 3. Create poles
                 const polesData = data.poles.map(pole => ({
                     team_id: team.id,
                     name: pole.name,
@@ -83,7 +77,7 @@ const OnboardingContent = () => {
 
                 if (polesError) throw polesError;
 
-                // 5. Update user profile
+                // 4. Update user profile
                 const { error: userError } = await supabase
                     .from('users')
                     .update({
@@ -96,7 +90,7 @@ const OnboardingContent = () => {
 
                 if (userError) throw userError;
 
-                // 6. Mark onboarding as completed
+                // 5. Mark onboarding as completed
                 const { error: metadataError } = await supabase.auth.updateUser({
                     data: {
                         onboarding_completed: true,
@@ -106,7 +100,7 @@ const OnboardingContent = () => {
 
                 if (metadataError) throw metadataError;
 
-                // 7. Send invitations (if any)
+                // 6. Send invitations (if any)
                 // Note: This would require admin access, so we'll skip for now
                 // and handle invitations after onboarding
 

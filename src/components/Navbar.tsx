@@ -54,18 +54,19 @@ export const Navbar = () => {
                     </Link>
                     
                     {/* CTA Button */}
-                    <motion.button 
-                        onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="group relative flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-white rounded-full overflow-hidden"
-                    >
-                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-emerald-600 transition-all duration-300" />
-                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-teal-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                        
-                        <span className="relative">Rejoindre</span>
-                        <ArrowRight className="relative w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
-                    </motion.button>
+                    <Link to="/signup">
+                        <motion.button 
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className="group relative flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-white rounded-full overflow-hidden"
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-emerald-600 transition-all duration-300" />
+                            <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-teal-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                            
+                            <span className="relative">Rejoindre</span>
+                            <ArrowRight className="relative w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                        </motion.button>
+                    </Link>
                 </div>
             </motion.div>
         </motion.nav>
