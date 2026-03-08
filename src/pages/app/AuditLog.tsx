@@ -9,9 +9,10 @@ import {
     Clock,
     Settings,
     Filter,
-    Download
+    Download,
+    Loader2
 } from 'lucide-react';
-import { auditLog, users } from '../../data/mockData';
+import { useAuditLog, useTeam } from '../../hooks';
 import { Avatar } from '../../components/app/feedback/Avatar';
 import type { AuditActionType } from '../../types';
 
@@ -106,22 +107,24 @@ export const AuditLog = () => {
     const navigate = useNavigate();
     const [filter, setFilter] = useState<FilterType>('all');
     const [selectedUser, setSelectedUser] = useState<string>('all');
+    const { logs, loading } = useAuditLog();
+    const { members, loading: loadingMembers } = useTeam();
 
-    const filteredLog = auditLog.filter(entry => {
+    const filteredLog = logs.filter(entry => {
         // Filter by type
         if (filter === 'decisions' && !['decision_created', 'decision_completed'].includes(entry.action)) return false;
         if (filter === 'votes' && !['vote_cast', 'vote_changed', 'argument_added'].includes(entry.action)) return false;
         if (filter === 'team' && !['member_invited', 'member_role_changed', 'participant_added'].includes(entry.action)) return false;
 
         // Filter by user
-        if (selectedUser !== 'all' && entry.userId !== selectedUser) return false;
+        if (selectedUser !== 'all' && entry.user_id !== selectedUser) return false;
 
         return true;
     });
 
     // Group by date
     const groupedLog = filteredLog.reduce((groups, entry) => {
-        const dateKey = entry.createdAt.toDateString();
+        const dateKey = new Date(entry.created_at).toDateString();
         if (!groups[dateKey]) groups[dateKey] = [];
         groups[dateKey].push(entry);
         return groups;
@@ -130,9 +133,9 @@ export const AuditLog = () => {
     const exportCSV = () => {
         const headers = ['Date', 'Action', 'Utilisateur', 'Détails'];
         const rows = filteredLog.map(entry => [
-            formatDateTime(entry.createdAt),
-            getActionLabel(entry.action),
-            `${entry.user.firstName} ${entry.user.lastName}`,
+            formatDateTime(new Date(entry.created_at)),
+            getActionLabel(entry.action as AuditActionType),
+            entry.user ? `${entry.user.first_name} ${entry.user.last_name}` : 'Utilisateur supprimé',
             entry.details
         ]);
 
@@ -145,6 +148,14 @@ export const AuditLog = () => {
         a.click();
         URL.revokeObjectURL(url);
     };
+
+    if (loading || loadingMembers) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+            </div>
+        );
+    }
 
     return (
         <div>
@@ -197,9 +208,9 @@ export const AuditLog = () => {
                     className="px-3 py-2 text-sm bg-card border border-zinc-200 dark:border-white/5 rounded-lg text-primary"
                 >
                     <option value="all">Tous les membres</option>
-                    {users.map(user => (
-                        <option key={user.id} value={user.id}>
-                            {user.firstName} {user.lastName}
+                    {members.map(member => (
+                        <option key={member.id} value={member.id}>
+                            {member.first_name} {member.last_name}
                         </option>
                     ))}
                 </select>
@@ -217,24 +228,30 @@ export const AuditLog = () => {
                                 <div
                                     key={entry.id}
                                     className="flex items-start gap-3 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-white/[0.02] transition-colors cursor-pointer"
-                                    onClick={() => entry.decisionId && navigate(`/app/decisions/${entry.decisionId}`)}
+                                    onClick={() => entry.decision_id && navigate(`/app/decisions/${entry.decision_id}`)}
                                 >
                                     {/* Avatar */}
-                                    <Avatar
-                                        firstName={entry.user.firstName}
-                                        lastName={entry.user.lastName}
-                                        color={entry.user.avatarColor}
-                                        size="sm"
-                                    />
+                                    {entry.user ? (
+                                        <Avatar
+                                            firstName={entry.user.first_name}
+                                            lastName={entry.user.last_name}
+                                            color={entry.user.avatar_color || '#10b981'}
+                                            size="sm"
+                                        />
+                                    ) : (
+                                        <div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center">
+                                            <span className="text-xs text-zinc-500">?</span>
+                                        </div>
+                                    )}
 
                                     {/* Content */}
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 flex-wrap">
                                             <span className="text-sm font-medium text-primary">
-                                                {entry.user.firstName} {entry.user.lastName}
+                                                {entry.user ? `${entry.user.first_name} ${entry.user.last_name}` : 'Utilisateur supprimé'}
                                             </span>
-                                            <span className={`px-1.5 py-0.5 text-[10px] font-medium rounded ${getActionColor(entry.action)}`}>
-                                                {getActionLabel(entry.action)}
+                                            <span className={`px-1.5 py-0.5 text-[10px] font-medium rounded ${getActionColor(entry.action as AuditActionType)}`}>
+                                                {getActionLabel(entry.action as AuditActionType)}
                                             </span>
                                         </div>
                                         <p className="text-sm text-secondary mt-0.5 line-clamp-2">
@@ -248,10 +265,10 @@ export const AuditLog = () => {
                                             {new Intl.DateTimeFormat('fr-FR', { 
                                                 hour: '2-digit', 
                                                 minute: '2-digit' 
-                                            }).format(entry.createdAt)}
+                                            }).format(new Date(entry.created_at))}
                                         </span>
-                                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${getActionColor(entry.action)}`}>
-                                            {getActionIcon(entry.action)}
+                                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${getActionColor(entry.action as AuditActionType)}`}>
+                                            {getActionIcon(entry.action as AuditActionType)}
                                         </div>
                                     </div>
                                 </div>

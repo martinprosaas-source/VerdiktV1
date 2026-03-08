@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, CheckCircle2, Loader2, ChevronDown, Mail, MessageCircle, Copy, Check, Gift } from 'lucide-react';
 import { Button } from './ui/Button';
 import { LogoIcon } from './Logo';
+import { supabase } from '../lib/supabase';
 import type { SelectedPlan } from '../context/BetaModalContext';
 
 interface BetaModalProps {
@@ -155,11 +156,35 @@ export const BetaModal = ({ isOpen, onClose, selectedPlan }: BetaModalProps) => 
 
         setIsLoading(true);
 
-        // Simulate API call - replace with real endpoint later
-        await new Promise((resolve) => setTimeout(resolve, 1500));
+        try {
+            const { error } = await supabase.from('beta_registrations').insert({
+                first_name: firstName.trim(),
+                email: email.trim().toLowerCase(),
+                company: company.trim(),
+                website: website.trim() || null,
+                team_size: teamSize,
+                plan,
+                contact_preference: contactPreference,
+                phone: contactPreference === 'whatsapp' ? phone.trim() : null,
+                referral_code: email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, ''),
+            });
 
-        setIsLoading(false);
-        setIsSuccess(true);
+            if (error) {
+                if (error.code === '23505') {
+                    setError('Cet email est déjà inscrit sur la waitlist.');
+                } else {
+                    throw error;
+                }
+                setIsLoading(false);
+                return;
+            }
+
+            setIsSuccess(true);
+        } catch (err: any) {
+            setError('Une erreur est survenue. Veuillez réessayer.');
+        } finally {
+            setIsLoading(false);
+        }
         // No auto-close - let user share or close manually
     };
 

@@ -8,6 +8,8 @@ interface AuthGuardProps {
     requireAuth?: boolean;
 }
 
+const AUTH_PAGES = ['/login', '/signup', '/register'];
+
 export const AuthGuard = ({ 
     children, 
     requireAuth = false,
@@ -19,10 +21,9 @@ export const AuthGuard = ({
     useEffect(() => {
         checkAuth();
 
-        // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             if (!session && requireAuth) {
-                navigate('/');
+                navigate('/login');
             }
         });
 
@@ -33,33 +34,26 @@ export const AuthGuard = ({
         try {
             const { data: { user } } = await supabase.auth.getUser();
 
-            // If auth is required but user is not logged in
             if (requireAuth && !user) {
-                navigate('/');
+                navigate('/login');
                 return;
             }
 
-            // If user is logged in, check onboarding status
             if (user) {
                 const onboardingCompleted = user.user_metadata?.onboarding_completed;
+                const isOnAuthPage = AUTH_PAGES.includes(location.pathname);
 
-                // User on landing page → redirect to onboarding or app
-                if (location.pathname === '/') {
-                    if (!onboardingCompleted) {
-                        navigate('/onboarding');
-                    } else {
-                        navigate('/app');
-                    }
+                // Authenticated user on landing or auth pages → redirect
+                if (location.pathname === '/' || isOnAuthPage) {
+                    navigate(onboardingCompleted ? '/app' : '/onboarding');
                     return;
                 }
 
-                // User trying to access onboarding but already completed
                 if (location.pathname === '/onboarding' && onboardingCompleted) {
                     navigate('/app');
                     return;
                 }
 
-                // User trying to access app but onboarding not completed
                 if (location.pathname.startsWith('/app') && !onboardingCompleted) {
                     navigate('/onboarding');
                     return;

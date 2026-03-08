@@ -38,10 +38,22 @@ function App() {
               </AuthGuard>
             } />
 
-            {/* Auth routes (ready for production) */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/signup" element={<Signup />} />
+            {/* Auth routes - AuthGuard redirects logged-in users */}
+            <Route path="/login" element={
+              <AuthGuard>
+                <Login />
+              </AuthGuard>
+            } />
+            <Route path="/register" element={
+              <AuthGuard>
+                <Register />
+              </AuthGuard>
+            } />
+            <Route path="/signup" element={
+              <AuthGuard>
+                <Signup />
+              </AuthGuard>
+            } />
             
             {/* Onboarding - protected, requires auth */}
             <Route path="/onboarding" element={

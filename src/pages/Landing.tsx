@@ -7,7 +7,7 @@ import { ForWho } from '../components/ForWho';
 import { Testimonials } from '../components/Testimonials';
 import { Pricing } from '../components/Pricing';
 import { FAQ } from '../components/FAQ';
-import { CTA } from '../components/CTA';
+import { AskAI } from '../components/AskAI';
 import { Footer } from '../components/Footer';
 import { ScrollToTop } from '../components/ScrollToTop';
 import { SplashScreen } from '../components/SplashScreen';
@@ -33,8 +33,8 @@ export const Landing = () => {
                 <Pricing />
                 {/* 8. FAQ - Lever les objections */}
                 <FAQ />
-                {/* 9. CTA Final - Dernière chance */}
-                <CTA />
+                {/* 9. Ask AI + CTA Final */}
+                <AskAI />
                 {/* 10. Footer */}
                 <Footer />
                 {/* Scroll to top button */}

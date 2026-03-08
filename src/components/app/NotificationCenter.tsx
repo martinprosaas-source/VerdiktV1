@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -9,14 +8,15 @@ import {
     AtSign, 
     CheckCircle,
     UserPlus,
-    X
+    X,
+    Loader2
 } from 'lucide-react';
-import { notifications as initialNotifications } from '../../data/mockData';
-import type { Notification, NotificationType } from '../../types';
+import { useNotifications, type DbNotification } from '../../hooks/useNotifications';
+import type { NotificationType } from '../../types';
 import { Avatar } from './feedback/Avatar';
 
-const getNotificationIcon = (type: NotificationType) => {
-    switch (type) {
+const getNotificationIcon = (type: string) => {
+    switch (type as NotificationType) {
         case 'vote_cast': return <Vote className="w-3.5 h-3.5" />;
         case 'argument_added': return <MessageSquare className="w-3.5 h-3.5" />;
         case 'deadline_reminder': return <Clock className="w-3.5 h-3.5" />;
@@ -28,8 +28,9 @@ const getNotificationIcon = (type: NotificationType) => {
     }
 };
 
-const formatTimeAgo = (date: Date) => {
+const formatTimeAgo = (dateStr: string) => {
     const now = new Date();
+    const date = new Date(dateStr);
     const diff = now.getTime() - date.getTime();
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(minutes / 60);
@@ -44,29 +45,16 @@ const formatTimeAgo = (date: Date) => {
 interface NotificationCenterProps {
     isOpen: boolean;
     onClose: () => void;
-    anchorRef?: React.RefObject<HTMLButtonElement>;
 }
 
 export const NotificationCenter = ({ isOpen, onClose }: NotificationCenterProps) => {
     const navigate = useNavigate();
-    const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
-    
-    const unreadCount = notifications.filter(n => !n.read).length;
+    const { notifications, unreadCount, loading, markAsRead, markAllAsRead } = useNotifications();
 
-    const markAsRead = (id: string) => {
-        setNotifications(prev => 
-            prev.map(n => n.id === id ? { ...n, read: true } : n)
-        );
-    };
-
-    const markAllAsRead = () => {
-        setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-    };
-
-    const handleNotificationClick = (notification: Notification) => {
-        markAsRead(notification.id);
-        if (notification.decisionId) {
-            navigate(`/app/decisions/${notification.decisionId}`);
+    const handleNotificationClick = async (notification: DbNotification) => {
+        await markAsRead(notification.id);
+        if (notification.decision_id) {
+            navigate(`/app/decisions/${notification.decision_id}`);
         }
         onClose();
     };
@@ -84,7 +72,7 @@ export const NotificationCenter = ({ isOpen, onClose }: NotificationCenterProps)
                         onClick={onClose}
                     />
 
-                    {/* Panel - Fixed position, slides from left (next to sidebar) */}
+                    {/* Panel */}
                     <motion.div
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -123,9 +111,17 @@ export const NotificationCenter = ({ isOpen, onClose }: NotificationCenterProps)
 
                         {/* Notifications list */}
                         <div className="flex-1 overflow-y-auto">
-                            {notifications.length === 0 ? (
-                                <div className="text-center py-8 text-tertiary text-sm">
-                                    Aucune notification
+                            {loading ? (
+                                <div className="flex items-center justify-center py-12">
+                                    <Loader2 className="w-5 h-5 animate-spin text-emerald-500" />
+                                </div>
+                            ) : notifications.length === 0 ? (
+                                <div className="text-center py-12 px-4">
+                                    <div className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-white/5 flex items-center justify-center mx-auto mb-3">
+                                        <Bell className="w-5 h-5 text-tertiary" />
+                                    </div>
+                                    <p className="text-sm text-tertiary">Aucune notification</p>
+                                    <p className="text-xs text-tertiary mt-1">Vous serez notifié des nouvelles actions de votre équipe</p>
                                 </div>
                             ) : (
                                 notifications.map((notification) => (
@@ -138,11 +134,11 @@ export const NotificationCenter = ({ isOpen, onClose }: NotificationCenterProps)
                                     >
                                         {/* Icon or Avatar */}
                                         <div className="flex-shrink-0 mt-0.5">
-                                            {notification.user ? (
+                                            {notification.triggered_by ? (
                                                 <Avatar
-                                                    firstName={notification.user.firstName}
-                                                    lastName={notification.user.lastName}
-                                                    color={notification.user.avatarColor}
+                                                    firstName={notification.triggered_by.first_name}
+                                                    lastName={notification.triggered_by.last_name}
+                                                    color={notification.triggered_by.avatar_color || undefined}
                                                     size="xs"
                                                 />
                                             ) : (
@@ -154,11 +150,11 @@ export const NotificationCenter = ({ isOpen, onClose }: NotificationCenterProps)
 
                                         {/* Content */}
                                         <div className="flex-1 min-w-0">
-                                            <p className={`text-sm ${!notification.read ? 'text-primary font-medium' : 'text-secondary'}`}>
+                                            <p className={`text-sm leading-snug ${!notification.read ? 'text-primary font-medium' : 'text-secondary'}`}>
                                                 {notification.message}
                                             </p>
                                             <p className="text-xs text-tertiary mt-0.5">
-                                                {formatTimeAgo(notification.createdAt)}
+                                                {formatTimeAgo(notification.created_at)}
                                             </p>
                                         </div>
 
@@ -186,34 +182,5 @@ export const NotificationCenter = ({ isOpen, onClose }: NotificationCenterProps)
                 </>
             )}
         </AnimatePresence>
-    );
-};
-
-// Button with badge for the sidebar
-interface NotificationButtonProps {
-    onClick: () => void;
-    isOpen: boolean;
-}
-
-export const NotificationButton = ({ onClick, isOpen }: NotificationButtonProps) => {
-    const unreadCount = initialNotifications.filter(n => !n.read).length;
-
-    return (
-        <button
-            onClick={onClick}
-            className={`relative flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm transition-colors ${
-                isOpen 
-                    ? 'bg-zinc-100 dark:bg-white/5 text-primary' 
-                    : 'text-secondary hover:text-primary hover:bg-zinc-50 dark:hover:bg-white/[0.03]'
-            }`}
-        >
-            <Bell className={`w-4 h-4 ${isOpen ? 'text-emerald-500' : ''}`} />
-            <span className="flex-1 text-left">Notifications</span>
-            {unreadCount > 0 && (
-                <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-emerald-500 text-white rounded-full min-w-[18px] text-center">
-                    {unreadCount}
-                </span>
-            )}
-        </button>
     );
 };

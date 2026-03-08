@@ -1,14 +1,11 @@
-import { useState } from 'react';
-import { Save, Shield, Info, Plug, ExternalLink, CheckCircle2, Clock, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Save, Shield, Info, Plug, CheckCircle2, Clock, Loader2, Unplug, LogOut } from 'lucide-react';
 import { Avatar } from '../../components/app/feedback/Avatar';
-import { useAuth, useTeam } from '../../hooks';
+import { useAuth, useTeam, useIntegrations } from '../../hooks';
 import { SlackLogo, NotionLogo, GoogleCalendarLogo } from '../../components/icons/IntegrationLogos';
-
-const roleLabels = {
-    owner: { label: 'Propriétaire', color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400' },
-    admin: { label: 'Admin', color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400' },
-    member: { label: 'Membre', color: 'bg-zinc-500/10 text-zinc-600 dark:text-zinc-400' },
-};
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { hasGoogleCalendarConnected } from '../../utils/googleCalendarSync';
+import { supabase } from '../../lib/supabase';
 
 const permissions = [
     { id: 'create_decisions', label: 'Créer des décisions', description: 'Peut créer de nouvelles décisions', roles: ['owner', 'admin', 'member'] },
@@ -20,26 +17,14 @@ const permissions = [
     { id: 'export_data', label: 'Exporter les données', description: 'Peut exporter les données de l\'équipe', roles: ['owner', 'admin'] },
 ];
 
-interface Integration {
-    id: string;
-    name: string;
-    description: string;
-    icon: React.ReactNode;
-    color: string;
-    bgColor: string;
-    status: 'connected' | 'available' | 'coming_soon';
-    features: string[];
-}
-
-const integrations: Integration[] = [
+const integrationDefs = [
     {
         id: 'slack',
         name: 'Slack',
         description: 'Recevez des notifications et participez aux décisions directement depuis Slack.',
         icon: <SlackLogo className="w-7 h-7 object-contain" />,
-        color: '',
         bgColor: 'bg-zinc-100 dark:bg-white/5',
-        status: 'coming_soon',
+        available: true,
         features: [
             'Notifications en temps réel',
             'Voter depuis Slack',
@@ -50,39 +35,241 @@ const integrations: Integration[] = [
     {
         id: 'notion',
         name: 'Notion',
-        description: 'Synchronisez vos décisions avec votre base de connaissances Notion.',
+        description: 'Exportez automatiquement vos décisions finalisées vers Notion.',
         icon: <NotionLogo className="w-7 h-7 object-contain" />,
-        color: '',
         bgColor: 'bg-zinc-100 dark:bg-white/5',
-        status: 'coming_soon',
+        available: true,
         features: [
-            'Export automatique',
-            'Base de données Notion',
-            'Templates personnalisés',
+            'Export automatique des décisions',
+            'Page Notion détaillée avec résultats',
+            'Export manuel depuis chaque décision',
             'Historique complet',
         ],
     },
     {
         id: 'google_calendar',
         name: 'Google Calendar',
-        description: 'Ajoutez automatiquement les deadlines à votre calendrier.',
+        description: 'Ajoutez les deadlines de vos décisions à votre Google Calendar avec rappels automatiques.',
         icon: <GoogleCalendarLogo className="w-7 h-7 object-contain" />,
-        color: '',
         bgColor: 'bg-zinc-100 dark:bg-white/5',
-        status: 'coming_soon',
+        available: true,
+        isUserLevel: true,
         features: [
-            'Rappels automatiques',
-            'Événements créés',
-            'Deadlines synchronisées',
-            'Invitations calendrier',
+            'Événements créés automatiquement',
+            'Rappels 1h et 24h avant',
+            'Participants invités',
+            'Lien direct vers la décision',
         ],
     },
 ];
 
 export const Settings = () => {
     const [activeTab, setActiveTab] = useState<'profile' | 'workspace' | 'permissions' | 'integrations'>('profile');
-    const { profile, loading } = useAuth();
-    const { members, team } = useTeam();
+    const { profile, loading, signOut, refreshProfile } = useAuth();
+    const navigate = useNavigate();
+    const { members, team, refetch: refetchTeam } = useTeam();
+    const { getIntegration, connectSlack, connectNotion, disconnectIntegration, refetch: refetchIntegrations } = useIntegrations();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [slackConnecting, setSlackConnecting] = useState(false);
+    const [notionConnecting, setNotionConnecting] = useState(false);
+    const [slackMessage, setSlackMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+    const [notionMessage, setNotionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+    const [gcalConnected, setGcalConnected] = useState(false);
+    const [gcalMessage, setGcalMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+    // Profile form state
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
+    const [profileSaving, setProfileSaving] = useState(false);
+    const [profileMessage, setProfileMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+    // Workspace form state
+    const [teamName, setTeamName] = useState('');
+    const [workspaceSaving, setWorkspaceSaving] = useState(false);
+    const [workspaceMessage, setWorkspaceMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+    // Sync form state when profile/team loads
+    useEffect(() => {
+        if (profile) {
+            setFirstName(profile.first_name || '');
+            setLastName(profile.last_name || '');
+        }
+    }, [profile?.id]);
+
+    useEffect(() => {
+        if (team) {
+            setTeamName(team.name || '');
+        }
+    }, [team?.id]);
+
+    const handleSaveProfile = async () => {
+        if (!profile) return;
+        setProfileSaving(true);
+        setProfileMessage(null);
+        try {
+            const { error } = await supabase
+                .from('users')
+                .update({ first_name: firstName.trim(), last_name: lastName.trim() })
+                .eq('id', profile.id);
+            if (error) throw error;
+            await refreshProfile();
+            setProfileMessage({ type: 'success', text: 'Profil mis à jour !' });
+        } catch {
+            setProfileMessage({ type: 'error', text: 'Erreur lors de la sauvegarde.' });
+        } finally {
+            setProfileSaving(false);
+            setTimeout(() => setProfileMessage(null), 3000);
+        }
+    };
+
+    const handleSaveWorkspace = async () => {
+        if (!profile?.team_id) return;
+        setWorkspaceSaving(true);
+        setWorkspaceMessage(null);
+        try {
+            const { error } = await supabase
+                .from('teams')
+                .update({ name: teamName.trim() })
+                .eq('id', profile.team_id);
+            if (error) throw error;
+            refetchTeam();
+            setWorkspaceMessage({ type: 'success', text: 'Workspace mis à jour !' });
+        } catch {
+            setWorkspaceMessage({ type: 'error', text: 'Erreur lors de la sauvegarde.' });
+        } finally {
+            setWorkspaceSaving(false);
+            setTimeout(() => setWorkspaceMessage(null), 3000);
+        }
+    };
+
+    // Handle OAuth callback redirects
+    useEffect(() => {
+        const slackStatus = searchParams.get('slack');
+        if (slackStatus === 'connected') {
+            setSlackMessage({ type: 'success', text: 'Slack connecté avec succès !' });
+            setActiveTab('integrations');
+            refetchIntegrations();
+            searchParams.delete('slack');
+            setSearchParams(searchParams, { replace: true });
+        } else if (slackStatus === 'error') {
+            const reason = searchParams.get('reason') || 'unknown';
+            setSlackMessage({ type: 'error', text: `Erreur de connexion Slack : ${reason}` });
+            setActiveTab('integrations');
+            searchParams.delete('slack');
+            searchParams.delete('reason');
+            setSearchParams(searchParams, { replace: true });
+        }
+
+        const gcalStatus = searchParams.get('gcal');
+        if (gcalStatus === 'connected') {
+            setGcalConnected(true);
+            setGcalMessage({ type: 'success', text: 'Google Calendar connecté avec succès !' });
+            setActiveTab('integrations');
+            searchParams.delete('gcal');
+            setSearchParams(searchParams, { replace: true });
+        } else if (gcalStatus === 'error') {
+            const reason = searchParams.get('reason') || 'unknown';
+            setGcalMessage({ type: 'error', text: `Erreur de connexion Google Calendar : ${reason}` });
+            setActiveTab('integrations');
+            searchParams.delete('gcal');
+            searchParams.delete('reason');
+            setSearchParams(searchParams, { replace: true });
+        }
+
+        const notionStatus = searchParams.get('notion');
+        if (notionStatus === 'connected') {
+            setNotionMessage({ type: 'success', text: 'Notion connecté avec succès !' });
+            setActiveTab('integrations');
+            refetchIntegrations();
+            searchParams.delete('notion');
+            setSearchParams(searchParams, { replace: true });
+        } else if (notionStatus === 'error') {
+            const reason = searchParams.get('reason') || 'unknown';
+            setNotionMessage({ type: 'error', text: `Erreur de connexion Notion : ${reason}` });
+            setActiveTab('integrations');
+            searchParams.delete('notion');
+            searchParams.delete('reason');
+            setSearchParams(searchParams, { replace: true });
+        }
+    }, [searchParams]);
+
+    const handleConnectSlack = async () => {
+        setSlackConnecting(true);
+        setSlackMessage(null);
+        try {
+            await connectSlack();
+        } catch {
+            setSlackMessage({ type: 'error', text: 'Impossible de démarrer la connexion Slack.' });
+            setSlackConnecting(false);
+        }
+    };
+
+    const handleDisconnectSlack = async () => {
+        try {
+            await disconnectIntegration('slack');
+            setSlackMessage({ type: 'success', text: 'Slack déconnecté.' });
+        } catch {
+            setSlackMessage({ type: 'error', text: 'Erreur lors de la déconnexion.' });
+        }
+    };
+
+    const handleConnectNotion = async () => {
+        setNotionConnecting(true);
+        setNotionMessage(null);
+        try {
+            await connectNotion();
+        } catch {
+            setNotionMessage({ type: 'error', text: 'Impossible de démarrer la connexion Notion.' });
+            setNotionConnecting(false);
+        }
+    };
+
+    const handleDisconnectNotion = async () => {
+        try {
+            await disconnectIntegration('notion');
+            setNotionMessage({ type: 'success', text: 'Notion déconnecté.' });
+        } catch {
+            setNotionMessage({ type: 'error', text: 'Erreur lors de la déconnexion.' });
+        }
+    };
+
+    // Google Calendar: check connection status
+    useEffect(() => {
+        hasGoogleCalendarConnected().then(setGcalConnected);
+    }, []);
+
+    const [gcalConnecting, setGcalConnecting] = useState(false);
+
+    const handleConnectGoogleCalendar = async () => {
+        if (!profile?.id) return;
+        setGcalConnecting(true);
+        setGcalMessage(null);
+        try {
+            const { data, error } = await supabase.functions.invoke('google-calendar-oauth', {
+                body: { user_id: profile.id },
+            });
+            if (error) throw error;
+            if (data?.url) {
+                window.location.href = data.url;
+            }
+        } catch {
+            setGcalMessage({ type: 'error', text: 'Impossible de se connecter à Google Calendar.' });
+            setGcalConnecting(false);
+        }
+    };
+
+    const handleDisconnectGoogleCalendar = async () => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                await supabase.from('user_google_tokens').delete().eq('user_id', user.id);
+            }
+            setGcalConnected(false);
+            setGcalMessage({ type: 'success', text: 'Google Calendar déconnecté.' });
+        } catch {
+            setGcalMessage({ type: 'error', text: 'Erreur lors de la déconnexion.' });
+        }
+    };
 
     if (loading || !profile) {
         return (
@@ -101,13 +288,20 @@ export const Settings = () => {
         member: { label: 'Membre', color: 'bg-zinc-500/10 text-zinc-600 dark:text-zinc-400' },
     };
 
-    const getStatusBadge = (status: Integration['status']) => {
+    const getStatusBadge = (status: string) => {
         switch (status) {
             case 'connected':
                 return (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                         <CheckCircle2 className="w-3 h-3" />
                         Connecté
+                    </span>
+                );
+            case 'available':
+                return (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                        <Plug className="w-3 h-3" />
+                        Disponible
                     </span>
                 );
             case 'coming_soon':
@@ -157,10 +351,10 @@ export const Settings = () => {
                         <h2 className="text-sm font-medium text-primary mb-4">Profil</h2>
                         
                         <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-5">
-                            <Avatar 
+                            <Avatar
                                 firstName={profile.first_name || ''}
                                 lastName={profile.last_name || ''}
-                                color={profile.avatar_color}
+                                color={profile.avatar_color || undefined}
                                 size="lg"
                             />
                             <div>
@@ -182,7 +376,8 @@ export const Settings = () => {
                                     </label>
                                     <input
                                         type="text"
-                                        defaultValue={profile.first_name || ''}
+                                        value={firstName}
+                                        onChange={(e) => setFirstName(e.target.value)}
                                         className="w-full px-3 py-2.5 sm:py-2 bg-background border border-zinc-200 dark:border-white/5 rounded-lg text-sm text-primary focus:outline-none focus:border-emerald-500/50 transition-colors"
                                     />
                                 </div>
@@ -192,7 +387,8 @@ export const Settings = () => {
                                     </label>
                                     <input
                                         type="text"
-                                        defaultValue={profile.last_name || ''}
+                                        value={lastName}
+                                        onChange={(e) => setLastName(e.target.value)}
                                         className="w-full px-3 py-2.5 sm:py-2 bg-background border border-zinc-200 dark:border-white/5 rounded-lg text-sm text-primary focus:outline-none focus:border-emerald-500/50 transition-colors"
                                     />
                                 </div>
@@ -203,14 +399,25 @@ export const Settings = () => {
                                 </label>
                                 <input
                                     type="email"
-                                    defaultValue={profile.email || ''}
-                                    className="w-full px-3 py-2.5 sm:py-2 bg-background border border-zinc-200 dark:border-white/5 rounded-lg text-sm text-primary focus:outline-none focus:border-emerald-500/50 transition-colors"
+                                    value={profile.email || ''}
+                                    readOnly
+                                    className="w-full px-3 py-2.5 sm:py-2 bg-zinc-50 dark:bg-white/[0.02] border border-zinc-200 dark:border-white/5 rounded-lg text-sm text-tertiary cursor-not-allowed"
                                 />
                             </div>
                         </div>
 
-                        <button className="mt-4 w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 sm:py-1.5 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-medium rounded-lg transition-colors">
-                            <Save className="w-3.5 h-3.5" />
+                        {profileMessage && (
+                            <p className={`mt-3 text-xs font-medium ${profileMessage.type === 'success' ? 'text-emerald-500' : 'text-red-500'}`}>
+                                {profileMessage.text}
+                            </p>
+                        )}
+
+                        <button
+                            onClick={handleSaveProfile}
+                            disabled={profileSaving}
+                            className="mt-4 w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 sm:py-1.5 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 text-white text-sm font-medium rounded-lg transition-colors"
+                        >
+                            {profileSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                             Sauvegarder
                         </button>
                     </section>
@@ -266,20 +473,22 @@ export const Settings = () => {
                                 </label>
                                 <input
                                     type="text"
-                                    defaultValue={team?.name || 'Mon équipe'}
+                                    value={teamName}
+                                    onChange={(e) => setTeamName(e.target.value)}
                                     className="w-full px-3 py-2 bg-background border border-zinc-200 dark:border-white/5 rounded-lg text-sm text-primary focus:outline-none focus:border-emerald-500/50 transition-colors"
                                 />
                             </div>
 
                             <div>
                                 <label className="block text-xs font-medium text-tertiary mb-1">
-                                    Domaine
+                                    Slug
                                 </label>
                                 <div className="flex">
                                     <input
                                         type="text"
-                                        defaultValue="techscale"
-                                        className="flex-1 px-3 py-2 bg-background border border-zinc-200 dark:border-white/5 rounded-l-lg text-sm text-primary focus:outline-none focus:border-emerald-500/50 transition-colors"
+                                        value={team?.slug || ''}
+                                        readOnly
+                                        className="flex-1 px-3 py-2 bg-zinc-50 dark:bg-white/[0.02] border border-zinc-200 dark:border-white/5 rounded-l-lg text-sm text-tertiary cursor-not-allowed"
                                     />
                                     <span className="px-3 py-2 bg-zinc-100 dark:bg-white/5 border border-l-0 border-zinc-200 dark:border-white/5 rounded-r-lg text-sm text-tertiary">
                                         .verdikt.ai
@@ -288,8 +497,18 @@ export const Settings = () => {
                             </div>
                         </div>
 
-                        <button className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-medium rounded-lg transition-colors">
-                            <Save className="w-3.5 h-3.5" />
+                        {workspaceMessage && (
+                            <p className={`mt-3 text-xs font-medium ${workspaceMessage.type === 'success' ? 'text-emerald-500' : 'text-red-500'}`}>
+                                {workspaceMessage.text}
+                            </p>
+                        )}
+
+                        <button
+                            onClick={handleSaveWorkspace}
+                            disabled={workspaceSaving}
+                            className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 text-white text-sm font-medium rounded-lg transition-colors"
+                        >
+                            {workspaceSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                             Sauvegarder
                         </button>
                     </section>
@@ -359,7 +578,7 @@ export const Settings = () => {
                                                     <Avatar
                                                         firstName={user.first_name}
                                                         lastName={user.last_name}
-                                                        color={user.avatar_color}
+                                                        color={user.avatar_color || undefined}
                                                         size="sm"
                                                     />
                                                     <span className="text-sm text-primary">
@@ -473,63 +692,154 @@ export const Settings = () => {
                         </div>
                     </div>
 
+                    {/* Integration message toasts */}
+                    {slackMessage && (
+                        <div className={`p-3 rounded-lg text-sm font-medium flex items-center gap-2 ${
+                            slackMessage.type === 'success' 
+                                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' 
+                                : 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20'
+                        }`}>
+                            {slackMessage.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <Info className="w-4 h-4" />}
+                            {slackMessage.text}
+                        </div>
+                    )}
+                    {notionMessage && (
+                        <div className={`p-3 rounded-lg text-sm font-medium flex items-center gap-2 ${
+                            notionMessage.type === 'success' 
+                                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' 
+                                : 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20'
+                        }`}>
+                            {notionMessage.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <Info className="w-4 h-4" />}
+                            {notionMessage.text}
+                        </div>
+                    )}
+
+                    {/* Google Calendar message */}
+                    {gcalMessage && (
+                        <div className={`p-3 rounded-lg text-sm font-medium flex items-center gap-2 ${
+                            gcalMessage.type === 'success' 
+                                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' 
+                                : 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20'
+                        }`}>
+                            {gcalMessage.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <Info className="w-4 h-4" />}
+                            {gcalMessage.text}
+                        </div>
+                    )}
+
                     {/* Integrations Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                        {integrations.map((integration) => (
-                            <div
-                                key={integration.id}
-                                className="bg-card border border-zinc-200 dark:border-white/5 rounded-xl p-5 hover:border-zinc-300 dark:hover:border-white/10 transition-colors"
-                            >
-                                {/* Header */}
-                                <div className="flex items-start justify-between mb-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`p-2.5 rounded-lg ${integration.bgColor}`}>
-                                            {integration.icon}
-                                        </div>
-                                        <div>
-                                            <h3 className="text-sm font-medium text-primary">{integration.name}</h3>
-                                            {getStatusBadge(integration.status)}
+                        {integrationDefs.map((intDef) => {
+                            const liveData = getIntegration(intDef.id);
+                            const isGcal = intDef.id === 'google_calendar';
+                            const isConnected = isGcal ? gcalConnected : !!liveData;
+                            const status = isConnected ? 'connected' : intDef.available ? 'available' : 'coming_soon';
+
+                            return (
+                                <div
+                                    key={intDef.id}
+                                    className={`bg-card border rounded-xl p-5 transition-colors ${
+                                        isConnected
+                                            ? 'border-emerald-500/30 dark:border-emerald-500/20'
+                                            : 'border-zinc-200 dark:border-white/5 hover:border-zinc-300 dark:hover:border-white/10'
+                                    }`}
+                                >
+                                    {/* Header */}
+                                    <div className="flex items-start justify-between mb-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`p-2.5 rounded-lg ${intDef.bgColor}`}>
+                                                {intDef.icon}
+                                            </div>
+                                            <div>
+                                                <h3 className="text-sm font-medium text-primary">{intDef.name}</h3>
+                                                {getStatusBadge(status)}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                {/* Description */}
-                                <p className="text-xs text-tertiary mb-4 leading-relaxed">
-                                    {integration.description}
-                                </p>
+                                    {/* Description */}
+                                    <p className="text-xs text-tertiary mb-4 leading-relaxed">
+                                        {intDef.description}
+                                    </p>
 
-                                {/* Features */}
-                                <div className="space-y-2 mb-4">
-                                    {integration.features.map((feature, idx) => (
-                                        <div key={idx} className="flex items-center gap-2 text-xs text-secondary">
-                                            <span className="w-1 h-1 rounded-full bg-emerald-500 flex-shrink-0" />
-                                            {feature}
+                                    {/* Connected info */}
+                                    {isConnected && liveData && (
+                                        <div className="mb-4 p-3 bg-emerald-500/5 border border-emerald-500/10 rounded-lg space-y-1.5">
+                                            {liveData.workspace_name && (
+                                                <p className="text-xs text-secondary">
+                                                    Workspace : <span className="font-medium text-primary">{liveData.workspace_name}</span>
+                                                </p>
+                                            )}
+                                            {liveData.channel_name && (
+                                                <p className="text-xs text-secondary">
+                                                    Channel : <span className="font-medium text-primary">#{liveData.channel_name}</span>
+                                                </p>
+                                            )}
                                         </div>
-                                    ))}
-                                </div>
+                                    )}
 
-                                {/* Action Button */}
-                                {integration.status === 'connected' ? (
-                                    <button className="w-full px-4 py-2 bg-zinc-100 dark:bg-white/5 text-secondary text-sm font-medium rounded-lg hover:bg-zinc-200 dark:hover:bg-white/10 transition-colors flex items-center justify-center gap-2">
-                                        <ExternalLink className="w-3.5 h-3.5" />
-                                        Gérer
-                                    </button>
-                                ) : integration.status === 'coming_soon' ? (
-                                    <button
-                                        disabled
-                                        className="w-full px-4 py-2 bg-zinc-100 dark:bg-white/5 text-tertiary text-sm font-medium rounded-lg cursor-not-allowed flex items-center justify-center gap-2"
-                                    >
-                                        <Clock className="w-3.5 h-3.5" />
-                                        Bientôt disponible
-                                    </button>
-                                ) : (
-                                    <button className="w-full px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2">
-                                        <Plug className="w-3.5 h-3.5" />
-                                        Connecter
-                                    </button>
-                                )}
-                            </div>
-                        ))}
+                                    {/* Features */}
+                                    <div className="space-y-2 mb-4">
+                                        {intDef.features.map((feature, idx) => (
+                                            <div key={idx} className="flex items-center gap-2 text-xs text-secondary">
+                                                <span className={`w-1 h-1 rounded-full flex-shrink-0 ${isConnected ? 'bg-emerald-500' : 'bg-zinc-400'}`} />
+                                                {feature}
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Action Button */}
+                                    {status === 'connected' ? (
+                                        <button
+                                            onClick={
+                                                intDef.id === 'slack' ? handleDisconnectSlack
+                                                : intDef.id === 'notion' ? handleDisconnectNotion
+                                                : isGcal ? handleDisconnectGoogleCalendar
+                                                : undefined
+                                            }
+                                            className="w-full px-4 py-2 bg-zinc-100 dark:bg-white/5 text-secondary text-sm font-medium rounded-lg hover:bg-red-500/10 hover:text-red-500 transition-colors flex items-center justify-center gap-2"
+                                        >
+                                            <Unplug className="w-3.5 h-3.5" />
+                                            Déconnecter
+                                        </button>
+                                    ) : status === 'coming_soon' ? (
+                                        <button
+                                            disabled
+                                            className="w-full px-4 py-2 bg-zinc-100 dark:bg-white/5 text-tertiary text-sm font-medium rounded-lg cursor-not-allowed flex items-center justify-center gap-2"
+                                        >
+                                            <Clock className="w-3.5 h-3.5" />
+                                            Bientôt disponible
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={
+                                                intDef.id === 'slack' ? handleConnectSlack
+                                                : intDef.id === 'notion' ? handleConnectNotion
+                                                : isGcal ? handleConnectGoogleCalendar
+                                                : undefined
+                                            }
+                                            disabled={
+                                                (slackConnecting && intDef.id === 'slack') ||
+                                                (notionConnecting && intDef.id === 'notion') ||
+                                                (gcalConnecting && isGcal)
+                                            }
+                                            className="w-full px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                                        >
+                                            {(slackConnecting && intDef.id === 'slack') || (notionConnecting && intDef.id === 'notion') || (gcalConnecting && isGcal) ? (
+                                                <>
+                                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                    Connexion...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Plug className="w-3.5 h-3.5" />
+                                                    Connecter
+                                                </>
+                                            )}
+                                        </button>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
 
                     {/* Request Integration */}
@@ -547,6 +857,20 @@ export const Settings = () => {
                     </section>
                 </div>
             )}
+
+            {/* Déconnexion */}
+            <div className="mt-8 pt-6 border-t border-zinc-200 dark:border-white/5">
+                <button
+                    onClick={async () => {
+                        await signOut();
+                        navigate('/');
+                    }}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 text-sm font-medium rounded-lg transition-colors border border-red-500/20 hover:border-red-500/30"
+                >
+                    <LogOut className="w-4 h-4" />
+                    Se déconnecter
+                </button>
+            </div>
         </div>
     );
 };

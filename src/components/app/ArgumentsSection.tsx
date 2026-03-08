@@ -2,14 +2,22 @@ import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, Send, AtSign } from 'lucide-react';
 import { Avatar } from './feedback/Avatar';
-import { users, currentUser } from '../../data/mockData';
-import type { Argument, User, VoteOption } from '../../types';
+import type { Argument, VoteOption } from '../../types';
+
+interface TeamMember {
+    id: string;
+    firstName: string;
+    lastName: string;
+    avatarColor?: string | null;
+}
 
 interface ArgumentsSectionProps {
     arguments: Argument[];
     options: VoteOption[];
     onAddArgument?: (optionId: string, text: string, mentions: string[]) => void;
     canAddArgument?: boolean;
+    teamMembers?: TeamMember[];
+    currentUserId?: string;
 }
 
 const formatTimeAgo = (date: Date) => {
@@ -47,7 +55,9 @@ export const ArgumentsSection = ({
     arguments: args, 
     options,
     onAddArgument,
-    canAddArgument = true 
+    canAddArgument = true,
+    teamMembers = [],
+    currentUserId,
 }: ArgumentsSectionProps) => {
     const [isExpanded, setIsExpanded] = useState(true);
     const [newArgument, setNewArgument] = useState('');
@@ -63,9 +73,9 @@ export const ArgumentsSection = ({
         return acc;
     }, {} as Record<string, Argument[]>);
 
-    // Filter users for mentions
-    const filteredUsers = users.filter(u => 
-        u.id !== currentUser.id &&
+    // Filter members for @mentions (exclude current user)
+    const filteredUsers = teamMembers.filter(u => 
+        u.id !== currentUserId &&
         (u.firstName.toLowerCase().includes(mentionFilter.toLowerCase()) ||
          u.lastName.toLowerCase().includes(mentionFilter.toLowerCase()))
     );
@@ -91,7 +101,7 @@ export const ArgumentsSection = ({
         setShowMentions(false);
     };
 
-    const insertMention = (user: User) => {
+    const insertMention = (user: TeamMember) => {
         const textBeforeCursor = newArgument.slice(0, cursorPosition);
         const lastAtIndex = textBeforeCursor.lastIndexOf('@');
         const textAfterCursor = newArgument.slice(cursorPosition);
@@ -115,7 +125,7 @@ export const ArgumentsSection = ({
         let match;
         while ((match = mentionRegex.exec(newArgument)) !== null) {
             const mentionName = match[1].toLowerCase();
-            const mentionedUser = users.find(u => 
+            const mentionedUser = teamMembers.find(u => 
                 u.firstName.toLowerCase() === mentionName
             );
             if (mentionedUser) {
@@ -270,7 +280,7 @@ export const ArgumentsSection = ({
                                                         <Avatar
                                                             firstName={user.firstName}
                                                             lastName={user.lastName}
-                                                            color={user.avatarColor}
+                                                            color={user.avatarColor ?? undefined}
                                                             size="xs"
                                                         />
                                                         <span className="text-sm text-primary">

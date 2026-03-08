@@ -1,6 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './useAuth';
+import { createAuditLog } from '../utils/auditLog';
+import { sendSlackNotification } from '../utils/slackNotify';
+import { exportToNotion } from '../utils/notionSync';
+import { createNotifications } from '../utils/createNotification';
+import { addToGoogleCalendar, hasGoogleCalendarConnected } from '../utils/googleCalendarSync';
 
 interface Decision {
     id: string;
@@ -28,6 +33,8 @@ interface DecisionWithDetails extends Decision {
     options: VoteOption[];
     votes_count: number;
     participants_count: number;
+    participant_ids: string[];
+    user_vote_option_id: string | null;
 }
 
 interface VoteOption {
@@ -43,77 +50,98 @@ export const useDecisions = () => {
     const [decisions, setDecisions] = useState<DecisionWithDetails[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const hasFetched = useRef(false);
 
     useEffect(() => {
-        if (profile?.team_id) {
+        if (profile?.team_id && !hasFetched.current) {
+            hasFetched.current = true;
             fetchDecisions();
-        } else {
+        } else if (!profile?.team_id) {
             setLoading(false);
         }
     }, [profile?.team_id]);
 
-    const fetchDecisions = async () => {
+    const fetchDecisions = useCallback(async () => {
         if (!profile?.team_id) return;
 
         try {
-            // Fetch decisions with creator and pole info
+            setLoading(true);
+
+            // ONE single query: decisions + creator + pole + options + votes count + participants count
             const { data: decisionsData, error: decisionsError } = await supabase
                 .from('decisions')
                 .select(`
                     *,
                     creator:users!decisions_creator_id_fkey(first_name, last_name, email),
-                    pole:poles(name, color)
+                    pole:poles(name, color),
+                    vote_options(id, label, position)
                 `)
                 .eq('team_id', profile.team_id)
                 .order('created_at', { ascending: false });
 
             if (decisionsError) throw decisionsError;
 
-            // For each decision, fetch options and counts
-            const decisionsWithDetails = await Promise.all(
-                (decisionsData || []).map(async (decision: any) => {
-                    // Fetch vote options
-                    const { data: options } = await supabase
-                        .from('vote_options')
-                        .select('*')
-                        .eq('decision_id', decision.id)
-                        .order('position', { ascending: true });
+            if (!decisionsData || decisionsData.length === 0) {
+                setDecisions([]);
+                setLoading(false);
+                return;
+            }
 
-                    // Count votes for each option
-                    const optionsWithCounts = await Promise.all(
-                        (options || []).map(async (option: any) => {
-                            const { count } = await supabase
-                                .from('votes')
-                                .select('*', { count: 'exact', head: true })
-                                .eq('option_id', option.id);
+            // 2 bulk queries for ALL decisions at once (instead of per-decision)
+            const decisionIds = decisionsData.map((d: any) => d.id);
 
-                            return {
-                                ...option,
-                                votes_count: count || 0,
-                            };
-                        })
-                    );
+            // Fetch ALL votes in one query
+            const { data: allVotes } = await supabase
+                .from('votes')
+                .select('decision_id, option_id, user_id')
+                .in('decision_id', decisionIds);
 
-                    // Count total votes
-                    const { count: votesCount } = await supabase
-                        .from('votes')
-                        .select('*', { count: 'exact', head: true })
-                        .eq('decision_id', decision.id);
+            // Fetch ALL participants in one query
+            const { data: allParticipants } = await supabase
+                .from('decision_participants')
+                .select('decision_id, user_id')
+                .in('decision_id', decisionIds);
 
-                    // Count participants
-                    const { count: participantsCount } = await supabase
-                        .from('decision_participants')
-                        .select('*', { count: 'exact', head: true })
-                        .eq('decision_id', decision.id);
+            // Build lookup maps for O(1) access
+            const votesByOption = new Map<string, number>();
+            const votesByDecision = new Map<string, number>();
+            const userVoteByDecision = new Map<string, string>(); // decisionId -> optionId (for current user)
+            (allVotes || []).forEach((v: any) => {
+                votesByOption.set(v.option_id, (votesByOption.get(v.option_id) || 0) + 1);
+                votesByDecision.set(v.decision_id, (votesByDecision.get(v.decision_id) || 0) + 1);
+                if (v.user_id === profile?.id) {
+                    userVoteByDecision.set(v.decision_id, v.option_id);
+                }
+            });
 
-                    return {
-                        ...decision,
-                        options: optionsWithCounts,
-                        votes_count: votesCount || 0,
-                        participants_count: participantsCount || 0,
-                    };
-                })
-            );
+            const participantsByDecision = new Map<string, number>();
+            const participantIdsByDecision = new Map<string, string[]>();
+            (allParticipants || []).forEach((p: any) => {
+                participantsByDecision.set(p.decision_id, (participantsByDecision.get(p.decision_id) || 0) + 1);
+                const ids = participantIdsByDecision.get(p.decision_id) || [];
+                ids.push(p.user_id);
+                participantIdsByDecision.set(p.decision_id, ids);
+            });
+
+            // Assemble everything (no more queries needed)
+            const decisionsWithDetails = decisionsData.map((decision: any) => {
+                const options = (decision.vote_options || [])
+                    .sort((a: any, b: any) => a.position - b.position)
+                    .map((opt: any) => ({
+                        ...opt,
+                        votes_count: votesByOption.get(opt.id) || 0,
+                    }));
+
+                return {
+                    ...decision,
+                    vote_options: undefined,
+                    options,
+                    votes_count: votesByDecision.get(decision.id) || 0,
+                    participants_count: participantsByDecision.get(decision.id) || 0,
+                    participant_ids: participantIdsByDecision.get(decision.id) || [],
+                    user_vote_option_id: userVoteByDecision.get(decision.id) || null,
+                };
+            });
 
             setDecisions(decisionsWithDetails);
         } catch (err: any) {
@@ -122,7 +150,7 @@ export const useDecisions = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [profile?.team_id]);
 
     const createDecision = async (decision: {
         title: string;
@@ -135,7 +163,6 @@ export const useDecisions = () => {
         if (!profile?.team_id || !profile?.id) throw new Error('No team or user ID');
 
         try {
-            // 1. Create decision
             const { data: newDecision, error: decisionError } = await supabase
                 .from('decisions')
                 .insert({
@@ -152,32 +179,79 @@ export const useDecisions = () => {
 
             if (decisionError) throw decisionError;
 
-            // 2. Create vote options
             const optionsData = decision.options.map((label, index) => ({
                 decision_id: newDecision.id,
                 label,
                 position: index,
             }));
 
-            const { error: optionsError } = await supabase
-                .from('vote_options')
-                .insert(optionsData);
-
-            if (optionsError) throw optionsError;
-
-            // 3. Add participants
             const participantsData = decision.participant_ids.map(userId => ({
                 decision_id: newDecision.id,
                 user_id: userId,
             }));
 
-            const { error: participantsError } = await supabase
-                .from('decision_participants')
-                .insert(participantsData);
+            // Insert options and participants in parallel
+            const [optionsResult, participantsResult] = await Promise.all([
+                supabase.from('vote_options').insert(optionsData),
+                supabase.from('decision_participants').insert(participantsData),
+            ]);
 
-            if (participantsError) throw participantsError;
+            if (optionsResult.error) throw optionsResult.error;
+            if (participantsResult.error) throw participantsResult.error;
 
-            // Refresh decisions
+            // Non-blocking audit log
+            createAuditLog({
+                userId: profile.id,
+                action: 'decision_created',
+                details: `A créé la décision "${decision.title}"`,
+                decisionId: newDecision.id,
+            }).catch(() => {});
+
+            // Non-blocking Slack notification
+            sendSlackNotification({
+                teamId: profile.team_id,
+                type: 'new_decision',
+                data: {
+                    decision_id: newDecision.id,
+                    title: decision.title,
+                    context: decision.context,
+                    options: decision.options,
+                    deadline: decision.deadline.toISOString(),
+                    creator_name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim(),
+                    pole_name: decision.pole_id ? undefined : undefined,
+                },
+            }).catch(() => {});
+
+            // Non-blocking in-app notifications for participants
+            const creatorName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Quelqu\'un';
+            createNotifications({
+                recipientIds: decision.participant_ids,
+                triggeredByUserId: profile.id,
+                type: 'new_decision',
+                title: 'Nouvelle décision',
+                message: `${creatorName} a créé la décision "${decision.title}"`,
+                decisionId: newDecision.id,
+            }).catch(() => {});
+
+            // Non-blocking Google Calendar sync (for the creator only if connected)
+            hasGoogleCalendarConnected().then(async (connected) => {
+                if (!connected) return;
+                const { data: participantUsers } = await supabase
+                    .from('users')
+                    .select('email')
+                    .in('id', decision.participant_ids);
+                const participantEmails = (participantUsers || []).map((u: any) => u.email).filter(Boolean);
+                addToGoogleCalendar({
+                    decisionId: newDecision.id,
+                    title: decision.title,
+                    description: decision.context,
+                    deadline: decision.deadline.toISOString(),
+                    participants: participantEmails,
+                }).catch(() => {});
+            }).catch(() => {});
+
+            // Refresh
+            hasFetched.current = false;
             await fetchDecisions();
             return newDecision;
         } catch (err: any) {
@@ -194,8 +268,75 @@ export const useDecisions = () => {
                 .eq('id', decisionId);
 
             if (error) throw error;
+
+            // If decision is being completed, send notifications + Notion export
+            if (updates.status === 'completed' && profile?.team_id) {
+                const decision = decisions.find(d => d.id === decisionId);
+                if (decision) {
+                    const totalVotes = decision.options.reduce((sum, o) => sum + (o.votes_count || 0), 0);
+                    const winningOption = [...decision.options].sort((a, b) => (b.votes_count || 0) - (a.votes_count || 0))[0];
+                    const participationRate = decision.participants_count > 0
+                        ? Math.round((totalVotes / decision.participants_count) * 100)
+                        : 0;
+
+                    const optionsWithStats = decision.options.map(o => ({
+                        label: o.label,
+                        votes: o.votes_count || 0,
+                        percentage: totalVotes > 0 ? Math.round(((o.votes_count || 0) / totalVotes) * 100) : 0,
+                        winner: o.id === winningOption?.id,
+                    }));
+
+                    sendSlackNotification({
+                        teamId: profile.team_id,
+                        type: 'decision_complete',
+                        data: {
+                            decision_id: decisionId,
+                            decision_title: decision.title,
+                            results: optionsWithStats,
+                            winning_option: winningOption?.label,
+                            total_votes: totalVotes,
+                            participation_rate: participationRate,
+                        },
+                    }).catch(() => {});
+
+                    exportToNotion({
+                        teamId: profile.team_id,
+                        decision: {
+                            id: decisionId,
+                            title: decision.title,
+                            context: decision.context,
+                            status: 'completed',
+                            deadline: decision.deadline,
+                            created_at: decision.created_at,
+                            creator_name: `${decision.creator?.first_name || ''} ${decision.creator?.last_name || ''}`.trim(),
+                            pole_name: decision.pole?.name,
+                            options: optionsWithStats,
+                            winning_option: winningOption?.label,
+                            total_votes: totalVotes,
+                            participation_rate: participationRate,
+                        },
+                    }).catch(() => {});
+
+                    // In-app notification for decision completed
+                    const { data: participants } = await supabase
+                        .from('decision_participants')
+                        .select('user_id')
+                        .eq('decision_id', decisionId);
+
+                    if (participants && profile?.id) {
+                        createNotifications({
+                            recipientIds: participants.map((p: any) => p.user_id),
+                            triggeredByUserId: profile.id,
+                            type: 'decision_completed',
+                            title: 'Décision finalisée',
+                            message: `La décision "${decision.title}" est terminée${winningOption ? ` — ${winningOption.label} l'emporte` : ''}`,
+                            decisionId,
+                        }).catch(() => {});
+                    }
+                }
+            }
             
-            // Refresh decisions
+            hasFetched.current = false;
             await fetchDecisions();
         } catch (err: any) {
             console.error('Error updating decision:', err);
@@ -214,6 +355,6 @@ export const useDecisions = () => {
         createDecision,
         updateDecision,
         getDecisionById,
-        refetch: fetchDecisions,
+        refetch: () => { hasFetched.current = false; fetchDecisions(); },
     };
 };

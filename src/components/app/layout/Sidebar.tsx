@@ -18,8 +18,8 @@ import {
     X,
     Building2
 } from 'lucide-react';
-import { currentUser, getPendingVotesCount, notifications } from '../../../data/mockData';
 import { useTheme } from '../../ThemeProvider';
+import { useAuth, useNotifications } from '../../../hooks';
 import { CommandPalette } from '../CommandPalette';
 import { NotificationCenter } from '../NotificationCenter';
 import { Logo } from '../../Logo';
@@ -39,8 +39,9 @@ export const Sidebar = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const { theme, setTheme } = useTheme();
-    const pendingVotes = getPendingVotesCount(currentUser.id);
-    const unreadNotifications = notifications.filter(n => !n.read).length;
+    const { profile } = useAuth();
+    const { unreadCount: unreadNotifications } = useNotifications();
+    const pendingVotes = 0;
 
     const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
     const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -219,14 +220,17 @@ export const Sidebar = () => {
                 {/* User */}
                 <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-zinc-50 dark:hover:bg-white/[0.03] transition-colors cursor-pointer">
                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-medium text-xs">
-                        {currentUser.firstName[0]}{currentUser.lastName[0]}
+                        {profile?.first_name?.[0] || profile?.email?.[0]?.toUpperCase() || '?'}
+                        {profile?.last_name?.[0] || ''}
                     </div>
                     <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-primary truncate">
-                            {currentUser.firstName} {currentUser.lastName}
+                            {profile?.first_name && profile?.last_name
+                                ? `${profile.first_name} ${profile.last_name}`
+                                : profile?.email || 'Chargement...'}
                         </p>
                         <p className="text-xs text-tertiary truncate">
-                            {currentUser.email}
+                            {profile?.first_name ? profile.email : ''}
                         </p>
                     </div>
                 </div>

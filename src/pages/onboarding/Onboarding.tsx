@@ -11,6 +11,7 @@ import { ArrowLeft, ArrowRight, Loader2, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { Logo } from '../../components/Logo';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../hooks';
 
 const stepTitles = [
     { title: 'Votre profil', subtitle: 'Parlez-nous de vous' },
@@ -23,6 +24,7 @@ const stepTitles = [
 
 const OnboardingContent = () => {
     const { data, currentStep, totalSteps, nextStep, prevStep, canGoNext } = useOnboarding();
+    const { refreshProfile } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
@@ -63,32 +65,38 @@ const OnboardingContent = () => {
                 if (teamError) throw teamError;
                 if (!team) throw new Error('Failed to create team');
 
-                // 3. Create poles
-                const polesData = data.poles.map(pole => ({
-                    team_id: team.id,
-                    name: pole.name,
-                    description: pole.description,
-                    color: pole.color,
-                }));
-
-                const { error: polesError } = await supabase
-                    .from('poles')
-                    .insert(polesData);
-
-                if (polesError) throw polesError;
-
-                // 4. Update user profile
+                // 3. Upsert user profile WITH team_id FIRST
+                // (so RLS get_user_team_id() works for subsequent inserts)
                 const { error: userError } = await supabase
                     .from('users')
-                    .update({
+                    .upsert({
+                        id: user.id,
+                        email: user.email!,
                         team_id: team.id,
                         first_name: data.firstName,
                         last_name: data.lastName,
                         role: 'owner',
-                    })
-                    .eq('id', user.id);
+                    }, { onConflict: 'id' });
 
                 if (userError) throw userError;
+
+                // 4. Now create poles (RLS can verify team_id)
+                if (data.poles.length > 0) {
+                    const polesData = data.poles.map(pole => ({
+                        team_id: team.id,
+                        name: pole.name,
+                        description: pole.description,
+                        color: pole.color,
+                    }));
+
+                    const { error: polesError } = await supabase
+                        .from('poles')
+                        .insert(polesData);
+
+                    if (polesError) {
+                        console.warn('Poles creation warning:', polesError);
+                    }
+                }
 
                 // 5. Mark onboarding as completed
                 const { error: metadataError } = await supabase.auth.updateUser({
@@ -100,11 +108,10 @@ const OnboardingContent = () => {
 
                 if (metadataError) throw metadataError;
 
-                // 6. Send invitations (if any)
-                // Note: This would require admin access, so we'll skip for now
-                // and handle invitations after onboarding
+                // 6. Refresh the cached profile so the app sees updated data
+                await refreshProfile();
 
-                // Success! Navigate to app
+                // 7. Navigate to app
                 navigate('/app');
             } catch (err: any) {
                 console.error('Onboarding error:', err);

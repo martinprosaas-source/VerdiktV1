@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useOnboarding } from '../../../context/OnboardingContext';
 import { User, Camera, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '../../../lib/supabase';
 
 const roles = [
     { value: 'ceo', label: 'CEO / Founder' },
@@ -17,6 +18,42 @@ export const StepProfile = () => {
     const [isRoleOpen, setIsRoleOpen] = useState(false);
     const [previewUrl, setPreviewUrl] = useState<string | null>(data.avatar);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const prefilled = useRef(false);
+
+    useEffect(() => {
+        if (prefilled.current) return;
+        prefilled.current = true;
+
+        const prefillFromAuth = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            const meta = user.user_metadata;
+            if (!meta) return;
+
+            const updates: Record<string, string> = {};
+
+            if (!data.firstName && meta.full_name) {
+                const parts = meta.full_name.split(' ');
+                updates.firstName = parts[0] || '';
+                if (parts.length > 1) updates.lastName = parts.slice(1).join(' ');
+            }
+            if (!data.firstName && meta.name) {
+                const parts = meta.name.split(' ');
+                updates.firstName = parts[0] || '';
+                if (!updates.lastName && parts.length > 1) updates.lastName = parts.slice(1).join(' ');
+            }
+
+            if (meta.avatar_url && !data.avatar) {
+                updates.avatar = meta.avatar_url;
+                setPreviewUrl(meta.avatar_url);
+            }
+
+            if (Object.keys(updates).length > 0) updateData(updates);
+        };
+
+        prefillFromAuth();
+    }, []);
 
     useEffect(() => {
         const isValid = data.firstName.trim() !== '' && data.role !== '';

@@ -1,12 +1,19 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, Check, Sparkles, Users, Calendar, Download, Share2, Building2, Loader2 } from 'lucide-react';
+import { ArrowLeft, Clock, Check, Sparkles, Users, Calendar, Download, Share2, Building2, Loader2, ExternalLink } from 'lucide-react';
 import { StatusBadge, getStatusVariant, getStatusLabel } from '../../components/app/feedback/Badge';
 import { Progress } from '../../components/app/feedback/Progress';
 import { Avatar } from '../../components/app/feedback/Avatar';
 import { DeadlineIndicator } from '../../components/app/feedback/DeadlineIndicator';
 import { ArgumentsSection } from '../../components/app/ArgumentsSection';
-import { useDecisions, useAuth } from '../../hooks';
+import { useAuth } from '../../hooks';
 import { supabase } from '../../lib/supabase';
+import { createAuditLog } from '../../utils/auditLog';
+import { sendSlackNotification } from '../../utils/slackNotify';
+import { exportToNotion } from '../../utils/notionSync';
+import { createNotifications } from '../../utils/createNotification';
+import { addToGoogleCalendar, hasGoogleCalendarConnected } from '../../utils/googleCalendarSync';
+import { useIntegrations } from '../../hooks';
+import { NotionLogo, GoogleCalendarLogo } from '../../components/icons/IntegrationLogos';
 import { useState, useEffect } from 'react';
 import type { Argument } from '../../types';
 
@@ -22,15 +29,26 @@ const formatDate = (date: Date) => {
 export const DecisionDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { getDecisionById } = useDecisions();
     const { profile } = useAuth();
     
+    const { getIntegration } = useIntegrations();
     const [decision, setDecision] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [selectedOption, setSelectedOption] = useState<string | null>(null);
     const [isVoting, setIsVoting] = useState(false);
+    const [notionExporting, setNotionExporting] = useState(false);
+    const [notionExportResult, setNotionExportResult] = useState<{ type: 'success' | 'error'; url?: string } | null>(null);
+    const [calendarSyncing, setCalendarSyncing] = useState(false);
+    const [calendarResult, setCalendarResult] = useState<{ type: 'success' | 'error' } | null>(null);
+    const [gcalConnected, setGcalConnected] = useState(false);
     const [localArguments, setLocalArguments] = useState<Argument[]>([]);
     const [userVote, setUserVote] = useState<string | null>(null);
+
+    const notionConnected = !!getIntegration('notion');
+
+    useEffect(() => {
+        hasGoogleCalendarConnected().then(setGcalConnected);
+    }, []);
 
     useEffect(() => {
         if (id) {
@@ -44,79 +62,120 @@ export const DecisionDetail = () => {
         try {
             setLoading(true);
             
-            // Get decision from hook
-            const decisionData = getDecisionById(id);
-            
-            if (decisionData) {
-                // Fetch participants
-                const { data: participantsData } = await supabase
+            // ONE query: decision + creator + pole + options
+            const { data: decisionData, error: decisionError } = await supabase
+                .from('decisions')
+                .select(`
+                    *,
+                    creator:users!decisions_creator_id_fkey(id, first_name, last_name, email, avatar_color),
+                    pole:poles(name, color),
+                    vote_options(id, label, position)
+                `)
+                .eq('id', id)
+                .single();
+
+            if (decisionError || !decisionData) {
+                console.error('Decision not found:', decisionError);
+                setLoading(false);
+                return;
+            }
+
+            // 3 parallel queries (instead of sequential)
+            const [participantsResult, votesResult, argsResult] = await Promise.all([
+                supabase
                     .from('decision_participants')
-                    .select(`
-                        users(id, first_name, last_name, email, avatar_color)
-                    `)
-                    .eq('decision_id', id);
-
-                const participants = participantsData?.map((p: any) => ({
-                    id: p.users.id,
-                    firstName: p.users.first_name,
-                    lastName: p.users.last_name,
-                    email: p.users.email,
-                    avatarColor: p.users.avatar_color,
-                })) || [];
-
-                // Fetch votes to know who voted
-                const { data: votesData } = await supabase
+                    .select('users(id, first_name, last_name, email, avatar_color)')
+                    .eq('decision_id', id),
+                supabase
                     .from('votes')
                     .select('user_id, option_id')
-                    .eq('decision_id', id);
-
-                const votesMap = new Map();
-                votesData?.forEach((vote: any) => {
-                    votesMap.set(vote.user_id, vote.option_id);
-                });
-
-                setDecision({
-                    ...decisionData,
-                    participants,
-                    votesMap,
-                });
-                
-                // Check if user has voted
-                if (profile?.id) {
-                    const userVoteOption = votesMap.get(profile.id);
-                    if (userVoteOption) {
-                        setUserVote(userVoteOption);
-                        setSelectedOption(userVoteOption);
-                    }
-                }
-
-                // Fetch arguments
-                const { data: argsData } = await supabase
+                    .eq('decision_id', id),
+                supabase
                     .from('arguments')
-                    .select(`
-                        *,
-                        user:users(first_name, last_name, email, avatar_color)
-                    `)
+                    .select('*, user:users(first_name, last_name, email, avatar_color)')
                     .eq('decision_id', id)
-                    .order('created_at', { ascending: true });
+                    .order('created_at', { ascending: true }),
+            ]);
 
-                if (argsData) {
-                    setLocalArguments(argsData.map((arg: any) => ({
-                        id: arg.id,
-                        userId: arg.user_id,
-                        user: {
-                            id: arg.user_id,
-                            firstName: arg.user.first_name,
-                            lastName: arg.user.last_name,
-                            email: arg.user.email,
-                            avatarColor: arg.user.avatar_color,
-                        },
-                        optionId: arg.option_id,
-                        text: arg.text,
-                        mentions: arg.mentions || [],
-                        createdAt: new Date(arg.created_at),
-                    })));
+            // Build votes lookup
+            const votesMap = new Map();
+            const votesByOption = new Map<string, number>();
+            (votesResult.data || []).forEach((vote: any) => {
+                votesMap.set(vote.user_id, vote.option_id);
+                votesByOption.set(vote.option_id, (votesByOption.get(vote.option_id) || 0) + 1);
+            });
+
+            // Map options with vote counts
+            const options = (decisionData.vote_options || [])
+                .sort((a: any, b: any) => a.position - b.position)
+                .map((opt: any) => ({
+                    ...opt,
+                    votes_count: votesByOption.get(opt.id) || 0,
+                }));
+
+            // Map participants
+            const participants = (participantsResult.data || [])
+                .map((p: any) => ({
+                    id: p.users?.id,
+                    firstName: p.users?.first_name,
+                    lastName: p.users?.last_name,
+                    email: p.users?.email,
+                    avatarColor: p.users?.avatar_color,
+                }))
+                .filter((p: any) => p.id);
+
+            // Build the decision object
+            const fullDecision = {
+                ...decisionData,
+                vote_options: undefined,
+                creator: decisionData.creator ? {
+                    id: decisionData.creator.id,
+                    firstName: decisionData.creator.first_name,
+                    lastName: decisionData.creator.last_name,
+                    email: decisionData.creator.email,
+                    avatarColor: decisionData.creator.avatar_color,
+                } : null,
+                pole: decisionData.pole ? {
+                    name: decisionData.pole.name,
+                    color: decisionData.pole.color,
+                } : null,
+                options,
+                participants,
+                votesMap,
+                deadline: new Date(decisionData.deadline),
+                createdAt: new Date(decisionData.created_at),
+            };
+
+            setDecision(fullDecision);
+            
+            // Check if user has voted
+            if (profile?.id) {
+                const userVoteOption = votesMap.get(profile.id);
+                if (userVoteOption) {
+                    setUserVote(userVoteOption);
+                    setSelectedOption(userVoteOption);
                 }
+            }
+
+            // Map arguments
+            if (argsResult.data) {
+                setLocalArguments(argsResult.data.map((arg: any) => ({
+                    id: arg.id,
+                    userId: arg.user_id,
+                    user: {
+                        id: arg.user_id,
+                        firstName: arg.user?.first_name || '',
+                        lastName: arg.user?.last_name || '',
+                        email: arg.user?.email || '',
+                        avatarColor: arg.user?.avatar_color || '#10b981',
+                        role: 'member' as const,
+                        createdAt: new Date(),
+                    },
+                    optionId: arg.option_id,
+                    text: arg.text,
+                    mentions: arg.mentions || [],
+                    createdAt: new Date(arg.created_at),
+                })));
             }
         } catch (error) {
             console.error('Error fetching decision details:', error);
@@ -197,6 +256,54 @@ export const DecisionDetail = () => {
 
             if (error) throw error;
 
+            // Get the option label for the log
+            const selectedOptionData = decision?.options?.find((opt: any) => opt.id === selectedOption);
+            const optionLabel = selectedOptionData?.label || 'une option';
+
+            // Log the action (non-blocking)
+            try {
+                await createAuditLog({
+                    userId: profile.id,
+                    action: hasVoted ? 'vote_changed' : 'vote_cast',
+                    details: hasVoted 
+                        ? `A modifié son vote pour "${optionLabel}" sur "${decision?.title}"`
+                        : `A voté "${optionLabel}" sur "${decision?.title}"`,
+                    decisionId: id,
+                });
+            } catch (logError) {
+                console.warn('Failed to create audit log:', logError);
+            }
+
+            // Slack notification (non-blocking)
+            if (profile.team_id) {
+                sendSlackNotification({
+                    teamId: profile.team_id,
+                    type: 'new_vote',
+                    data: {
+                        decision_id: id,
+                        decision_title: decision?.title,
+                        voter_name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim(),
+                        option_label: optionLabel,
+                        votes_count: (decision?.votes_count || 0) + (hasVoted ? 0 : 1),
+                        total_participants: decision?.participants_count || 0,
+                        all_voted: (decision?.votes_count || 0) + (hasVoted ? 0 : 1) >= (decision?.participants_count || 0),
+                    },
+                }).catch(() => {});
+            }
+
+            // In-app notification to decision creator
+            if (decision?.creator_id && decision.creator_id !== profile.id) {
+                const voterName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Quelqu\'un';
+                createNotifications({
+                    recipientIds: [decision.creator_id],
+                    triggeredByUserId: profile.id,
+                    type: 'vote_cast',
+                    title: 'Nouveau vote',
+                    message: `${voterName} a voté "${optionLabel}" sur "${decision.title}"`,
+                    decisionId: id,
+                }).catch(() => {});
+            }
+
             // Refresh decision data
             setUserVote(selectedOption);
             await fetchDecisionDetails();
@@ -238,6 +345,8 @@ export const DecisionDetail = () => {
                         lastName: data.user.last_name,
                         email: data.user.email,
                         avatarColor: data.user.avatar_color,
+                        role: 'member' as const,
+                        createdAt: new Date(),
                     },
                     optionId: data.option_id,
                     text: data.text,
@@ -245,6 +354,35 @@ export const DecisionDetail = () => {
                     createdAt: new Date(data.created_at),
                 };
                 setLocalArguments(prev => [...prev, newArgument]);
+
+                // Get the option label for the log
+                const optionData = decision?.options?.find((opt: any) => opt.id === optionId);
+                const optionLabel = optionData?.label || 'une option';
+
+                // Log the action (non-blocking)
+                try {
+                    await createAuditLog({
+                        userId: profile.id,
+                        action: 'argument_added',
+                        details: `A ajouté un argument pour "${optionLabel}" sur "${decision?.title}"`,
+                        decisionId: id,
+                    });
+                } catch (logError) {
+                    console.warn('Failed to create audit log:', logError);
+                }
+
+                // Notify decision creator about the new argument
+                if (decision?.creator_id && decision.creator_id !== profile.id) {
+                    const authorName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Quelqu\'un';
+                    createNotifications({
+                        recipientIds: [decision.creator_id],
+                        triggeredByUserId: profile.id,
+                        type: 'argument_added',
+                        title: 'Nouvel argument',
+                        message: `${authorName} a argumenté pour "${optionLabel}" sur "${decision.title}"`,
+                        decisionId: id,
+                    }).catch(() => {});
+                }
             }
         } catch (error) {
             console.error('Error adding argument:', error);
@@ -264,10 +402,10 @@ CONTEXTE:
 ${decision.context}
 
 OPTIONS ET VOTES:
-${decision.options.map(opt => `- ${opt.label}: ${opt.votes} votes (${totalVotes > 0 ? Math.round((opt.votes / totalVotes) * 100) : 0}%)`).join('\n')}
+${decision.options.map((opt: any) => `- ${opt.label}: ${opt.votes} votes (${totalVotes > 0 ? Math.round((opt.votes / totalVotes) * 100) : 0}%)`).join('\n')}
 
 ARGUMENTS:
-${localArguments.map(arg => `- ${arg.user.firstName}: "${arg.text}" (pour "${decision.options.find(o => o.id === arg.optionId)?.label}")`).join('\n')}
+${localArguments.map(arg => `- ${arg.user.firstName}: "${arg.text}" (pour "${decision.options.find((o: any) => o.id === arg.optionId)?.label}")`).join('\n')}
 
 ${decision.aiSummary ? `
 SYNTHÈSE IA:
@@ -285,9 +423,87 @@ Recommandation: ${decision.aiSummary.recommendation}
         URL.revokeObjectURL(url);
     };
 
+    const handleExportToNotion = async () => {
+        if (!profile?.team_id || !decision) return;
+
+        setNotionExporting(true);
+        setNotionExportResult(null);
+
+        try {
+            const totalVotesCount = decision.options.reduce((sum: number, o: any) => sum + (o.votes_count || 0), 0);
+            const winOpt = [...decision.options].sort((a: any, b: any) => (b.votes_count || 0) - (a.votes_count || 0))[0];
+
+            const result = await exportToNotion({
+                teamId: profile.team_id,
+                decision: {
+                    id: decision.id,
+                    title: decision.title,
+                    context: decision.context,
+                    status: decision.status,
+                    deadline: decision.deadline instanceof Date ? decision.deadline.toISOString() : decision.deadline,
+                    created_at: decision.created_at,
+                    creator_name: decision.creator
+                        ? `${decision.creator.firstName || decision.creator.first_name || ''} ${decision.creator.lastName || decision.creator.last_name || ''}`.trim()
+                        : undefined,
+                    pole_name: decision.pole?.name,
+                    options: decision.options.map((o: any) => ({
+                        label: o.label,
+                        votes: o.votes_count || 0,
+                        percentage: totalVotesCount > 0 ? Math.round(((o.votes_count || 0) / totalVotesCount) * 100) : 0,
+                    })),
+                    winning_option: winOpt?.label,
+                    total_votes: totalVotesCount,
+                    participation_rate: totalParticipants > 0
+                        ? Math.round((totalVotesCount / totalParticipants) * 100)
+                        : 0,
+                },
+            });
+
+            if (result.success) {
+                setNotionExportResult({ type: 'success', url: result.page_url || undefined });
+            } else {
+                setNotionExportResult({ type: 'error' });
+            }
+        } catch {
+            setNotionExportResult({ type: 'error' });
+        } finally {
+            setNotionExporting(false);
+        }
+    };
+
+    const handleAddToCalendar = async () => {
+        if (!decision) return;
+
+        setCalendarSyncing(true);
+        setCalendarResult(null);
+
+        try {
+            const deadlineStr = decision.deadline instanceof Date
+                ? decision.deadline.toISOString()
+                : decision.deadline;
+
+            const participantEmails = decision.participants
+                ?.map((p: any) => p.email)
+                .filter(Boolean) || [];
+
+            const result = await addToGoogleCalendar({
+                decisionId: decision.id,
+                title: decision.title,
+                description: decision.context || undefined,
+                deadline: deadlineStr,
+                participants: participantEmails,
+            });
+
+            setCalendarResult({ type: result.success ? 'success' : 'error' });
+        } catch {
+            setCalendarResult({ type: 'error' });
+        } finally {
+            setCalendarSyncing(false);
+        }
+    };
+
     const copyShareLink = () => {
         navigator.clipboard.writeText(window.location.href);
-        // In production, show a toast notification
     };
 
     return (
@@ -320,7 +536,53 @@ Recommandation: ${decision.aiSummary.recommendation}
                         </div>
                     </div>
                 </div>
-                <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                    {notionConnected && (
+                        <button
+                            onClick={handleExportToNotion}
+                            disabled={notionExporting}
+                            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all border ${
+                                notionExportResult?.type === 'success'
+                                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500'
+                                    : 'bg-zinc-100 dark:bg-white/5 border-zinc-200 dark:border-white/10 text-primary hover:bg-zinc-200 dark:hover:bg-white/10 hover:border-zinc-300 dark:hover:border-white/20'
+                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                        >
+                            {notionExporting ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : notionExportResult?.type === 'success' ? (
+                                <Check className="w-4 h-4" />
+                            ) : (
+                                <NotionLogo className="w-4 h-4" />
+                            )}
+                            <span className="hidden sm:inline">
+                                {notionExporting ? 'Export...' : notionExportResult?.type === 'success' ? 'Exporté' : 'Notion'}
+                            </span>
+                        </button>
+                    )}
+                    {gcalConnected && isActive && (
+                        <button
+                            onClick={handleAddToCalendar}
+                            disabled={calendarSyncing}
+                            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all border ${
+                                calendarResult?.type === 'success'
+                                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500'
+                                    : calendarResult?.type === 'error'
+                                        ? 'bg-red-500/10 border-red-500/30 text-red-500'
+                                        : 'bg-zinc-100 dark:bg-white/5 border-zinc-200 dark:border-white/10 text-primary hover:bg-zinc-200 dark:hover:bg-white/10 hover:border-zinc-300 dark:hover:border-white/20'
+                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                        >
+                            {calendarSyncing ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : calendarResult?.type === 'success' ? (
+                                <Check className="w-4 h-4" />
+                            ) : (
+                                <GoogleCalendarLogo className="w-4 h-4" />
+                            )}
+                            <span className="hidden sm:inline">
+                                {calendarSyncing ? 'Ajout...' : calendarResult?.type === 'success' ? 'Ajouté' : 'Calendrier'}
+                            </span>
+                        </button>
+                    )}
                     <button
                         onClick={copyShareLink}
                         className="p-2 text-tertiary hover:text-primary hover:bg-zinc-100 dark:hover:bg-white/5 rounded-lg transition-colors"
@@ -337,6 +599,34 @@ Recommandation: ${decision.aiSummary.recommendation}
                     </button>
                 </div>
             </div>
+
+            {/* Notion export feedback */}
+            {notionExportResult && (
+                <div className={`mb-4 p-3 rounded-lg text-sm font-medium flex items-center gap-2 ${
+                    notionExportResult.type === 'success'
+                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                        : 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20'
+                }`}>
+                    {notionExportResult.type === 'success' ? (
+                        <>
+                            <Check className="w-4 h-4" />
+                            Exporté vers Notion !
+                            {notionExportResult.url && (
+                                <a
+                                    href={notionExportResult.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="ml-auto inline-flex items-center gap-1 text-emerald-500 hover:text-emerald-400 underline"
+                                >
+                                    Ouvrir <ExternalLink className="w-3 h-3" />
+                                </a>
+                            )}
+                        </>
+                    ) : (
+                        <>Erreur lors de l'export Notion</>
+                    )}
+                </div>
+            )}
 
             {/* On mobile, sidebar content comes first for better UX */}
             <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 sm:gap-6">
@@ -468,7 +758,7 @@ Recommandation: ${decision.aiSummary.recommendation}
                                     <div className="md:col-span-2">
                                         <h3 className="text-xs font-medium text-tertiary mb-1">Points d'attention</h3>
                                         <ul className="grid grid-cols-1 md:grid-cols-2 gap-1">
-                                            {decision.aiSummary.concerns.map((concern, i) => (
+                                            {decision.aiSummary.concerns.map((concern: string, i: number) => (
                                                 <li key={i} className="text-sm text-secondary flex items-start gap-2">
                                                     <span className="text-emerald-500 mt-1">•</span>
                                                     {concern}
@@ -487,6 +777,8 @@ Recommandation: ${decision.aiSummary.recommendation}
                         options={decision.options}
                         onAddArgument={handleAddArgument}
                         canAddArgument={isActive}
+                        teamMembers={decision.participants || []}
+                        currentUserId={profile?.id}
                     />
                 </div>
 
@@ -515,7 +807,7 @@ Recommandation: ${decision.aiSummary.recommendation}
                                 <div>
                                     <p className="text-xs text-tertiary">Créée par</p>
                                     <p className="text-sm text-primary">
-                                        {decision.creator?.first_name || 'Unknown'} {decision.creator?.last_name || ''}
+                                        {decision.creator?.firstName || decision.creator?.first_name || 'Inconnu'} {decision.creator?.lastName || decision.creator?.last_name || ''}
                                     </p>
                                 </div>
                             </div>

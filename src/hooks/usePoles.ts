@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './useAuth';
 
@@ -11,24 +11,36 @@ interface Pole {
     created_at: string;
 }
 
+// Module-level cache
+let cachedPoles: Pole[] = [];
+let cachedPolesTeamId: string | null = null;
+
 export const usePoles = () => {
     const { profile } = useAuth();
-    const [poles, setPoles] = useState<Pole[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [poles, setPoles] = useState<Pole[]>(cachedPoles);
+    const [loading, setLoading] = useState(!cachedPoles.length);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        if (profile?.team_id) {
-            fetchPoles();
-        } else {
+        if (!profile?.team_id) {
             setLoading(false);
+            return;
         }
+
+        if (cachedPolesTeamId === profile.team_id && cachedPoles.length > 0) {
+            setPoles(cachedPoles);
+            setLoading(false);
+            return;
+        }
+
+        fetchPoles();
     }, [profile?.team_id]);
 
-    const fetchPoles = async () => {
+    const fetchPoles = useCallback(async () => {
         if (!profile?.team_id) return;
 
         try {
+            setLoading(true);
             const { data, error } = await supabase
                 .from('poles')
                 .select('*')
@@ -36,6 +48,9 @@ export const usePoles = () => {
                 .order('created_at', { ascending: true });
 
             if (error) throw error;
+
+            cachedPoles = data || [];
+            cachedPolesTeamId = profile.team_id;
             setPoles(data || []);
         } catch (err: any) {
             console.error('Error fetching poles:', err);
@@ -43,7 +58,7 @@ export const usePoles = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [profile?.team_id]);
 
     const createPole = async (pole: Omit<Pole, 'id' | 'created_at' | 'team_id'>) => {
         if (!profile?.team_id) throw new Error('No team ID');
@@ -51,16 +66,12 @@ export const usePoles = () => {
         try {
             const { data, error } = await supabase
                 .from('poles')
-                .insert({
-                    ...pole,
-                    team_id: profile.team_id,
-                })
+                .insert({ ...pole, team_id: profile.team_id })
                 .select()
                 .single();
 
             if (error) throw error;
-            
-            // Refresh poles
+            cachedPolesTeamId = null;
             await fetchPoles();
             return data;
         } catch (err: any) {
@@ -77,8 +88,7 @@ export const usePoles = () => {
                 .eq('id', poleId);
 
             if (error) throw error;
-            
-            // Refresh poles
+            cachedPolesTeamId = null;
             await fetchPoles();
         } catch (err: any) {
             console.error('Error updating pole:', err);
@@ -94,8 +104,7 @@ export const usePoles = () => {
                 .eq('id', poleId);
 
             if (error) throw error;
-            
-            // Refresh poles
+            cachedPolesTeamId = null;
             await fetchPoles();
         } catch (err: any) {
             console.error('Error deleting pole:', err);
@@ -110,6 +119,6 @@ export const usePoles = () => {
         createPole,
         updatePole,
         deletePole,
-        refetch: fetchPoles,
+        refetch: () => { cachedPolesTeamId = null; fetchPoles(); },
     };
 };

@@ -5,34 +5,26 @@ import { StatusBadge, getStatusVariant, getStatusLabel } from '../feedback/Badge
 import { Progress } from '../feedback/Progress';
 import { Avatar } from '../feedback/Avatar';
 import { DeadlineBadge } from '../feedback/DeadlineIndicator';
-import { currentUser, poles } from '../../../data/mockData';
 
 interface DecisionCardProps {
     decision: Decision;
 }
 
 export const DecisionCard = ({ decision }: DecisionCardProps) => {
-    const totalVotes = decision.options.reduce((acc, opt) => acc + opt.votes, 0);
-    const totalParticipants = decision.participants.length;
-    
-    const hasVoted = decision.options.some(opt => opt.voters.includes(currentUser.id));
+    const options = decision.options || [];
+    const participants = decision.participants || [];
+
+    const totalVotes = options.reduce((acc, opt) => acc + (opt.votes || 0), 0);
+    const totalParticipants = participants.length;
+    const hasVoted = false;
     const isActive = decision.status === 'active';
 
-    const pole = decision.poleId ? poles.find(p => p.id === decision.poleId) : null;
+    // Convert deadline to Date if it's a string
+    const deadlineDate = decision.deadline instanceof Date 
+        ? decision.deadline 
+        : new Date(decision.deadline);
 
-    const getPoleColorClass = (color: string) => {
-        const colors: Record<string, string> = {
-            purple: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
-            pink: 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20',
-            blue: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
-            emerald: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
-            orange: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20',
-            cyan: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20',
-            yellow: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20',
-            red: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
-        };
-        return colors[color] || colors.blue;
-    };
+    const isValidDeadline = deadlineDate instanceof Date && !isNaN(deadlineDate.getTime());
 
     return (
         <Link 
@@ -57,13 +49,8 @@ export const DecisionCard = ({ decision }: DecisionCardProps) => {
                         )}
                     </div>
                     <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-tertiary">
-                        {pole && (
-                            <span className={`px-2 py-0.5 rounded border text-[10px] font-medium ${getPoleColorClass(pole.color)}`}>
-                                {pole.name.replace('Pôle ', '')}
-                            </span>
-                        )}
-                        <span>{totalVotes}/{totalParticipants} votes</span>
-                        {isActive && <DeadlineBadge deadline={decision.deadline} />}
+                        <span>{totalVotes}/{totalParticipants || '?'} votes</span>
+                        {isActive && isValidDeadline && <DeadlineBadge deadline={deadlineDate} />}
                         {hasVoted && <span className="text-emerald-500">✓ Voté</span>}
                     </div>
                 </div>
@@ -73,38 +60,42 @@ export const DecisionCard = ({ decision }: DecisionCardProps) => {
             <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 lg:gap-6 pl-4 sm:pl-0">
                 {/* Progress */}
                 <div className="w-24 sm:w-32 md:w-40 lg:w-52 xl:w-64 flex-shrink-0">
-                    <Progress value={totalVotes} max={totalParticipants} size="sm" />
+                    <Progress value={totalVotes} max={totalParticipants || 1} size="sm" />
                 </div>
 
                 {/* Creator - visible on lg+ */}
-                <div className="hidden lg:flex items-center gap-2 text-xs text-tertiary flex-shrink-0">
-                    <Avatar 
-                        firstName={decision.creator.firstName}
-                        lastName={decision.creator.lastName}
-                        color={decision.creator.avatarColor}
-                        size="xs"
-                    />
-                    <span className="truncate max-w-[100px]">{decision.creator.firstName}</span>
-                </div>
-
-                {/* Participants avatars - show fewer on mobile */}
-                <div className="flex -space-x-1.5 flex-shrink-0">
-                    {decision.participants.slice(0, 3).map((user) => (
+                {decision.creator && (
+                    <div className="hidden lg:flex items-center gap-2 text-xs text-tertiary flex-shrink-0">
                         <Avatar 
-                            key={user.id}
-                            firstName={user.firstName}
-                            lastName={user.lastName}
-                            color={user.avatarColor}
+                            firstName={decision.creator.firstName || ''}
+                            lastName={decision.creator.lastName || ''}
+                            color={decision.creator.avatarColor}
                             size="xs"
-                            className="border-2 border-card"
                         />
-                    ))}
-                    {decision.participants.length > 3 && (
-                        <div className="w-6 h-6 rounded-full bg-zinc-100 dark:bg-white/10 flex items-center justify-center text-[10px] text-tertiary border-2 border-card">
-                            +{decision.participants.length - 3}
-                        </div>
-                    )}
-                </div>
+                        <span className="truncate max-w-[100px]">{decision.creator.firstName}</span>
+                    </div>
+                )}
+
+                {/* Participants avatars */}
+                {participants.length > 0 && (
+                    <div className="flex -space-x-1.5 flex-shrink-0">
+                        {participants.slice(0, 3).map((user) => (
+                            <Avatar 
+                                key={user.id}
+                                firstName={user.firstName}
+                                lastName={user.lastName}
+                                color={user.avatarColor}
+                                size="xs"
+                                className="border-2 border-card"
+                            />
+                        ))}
+                        {participants.length > 3 && (
+                            <div className="w-6 h-6 rounded-full bg-zinc-100 dark:bg-white/10 flex items-center justify-center text-[10px] text-tertiary border-2 border-card">
+                                +{participants.length - 3}
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Arrow */}
                 <ChevronRight className="w-4 h-4 text-tertiary group-hover:text-primary transition-colors flex-shrink-0" />

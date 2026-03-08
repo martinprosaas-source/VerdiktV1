@@ -257,9 +257,14 @@ export const DecisionsList = () => {
             {/* Decisions List */}
             {filteredAndSortedDecisions.length > 0 ? (
                 <div className="space-y-2">
-                    {filteredAndSortedDecisions.map((decision) => (
-                        <DecisionCard key={decision.id} decision={adaptDecisionForComponents(decision)} />
-                    ))}
+                    {filteredAndSortedDecisions.map((decision) => {
+                        try {
+                            return <DecisionCard key={decision.id} decision={adaptDecisionForComponents(decision)} />;
+                        } catch (error) {
+                            console.error('Error rendering decision:', decision.id, error);
+                            return null;
+                        }
+                    })}
                 </div>
             ) : (
                 <EmptyState

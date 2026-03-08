@@ -105,6 +105,7 @@ export const NewDecision = () => {
         } catch (err: any) {
             console.error('Error creating decision:', err);
             setError(err.message || 'Une erreur est survenue');
+        } finally {
             setIsSubmitting(false);
         }
     };

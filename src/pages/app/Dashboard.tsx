@@ -16,17 +16,29 @@ export const Dashboard = () => {
         const now = new Date();
         const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
         
-        const activeDecisions = decisions.filter(d => d.status === 'active');
+        const activeDecisions = decisions.filter(d => d && d.status === 'active');
         
         // Count decisions created this month
         const decisionsThisMonth = decisions.filter(d => {
-            const createdAt = new Date(d.created_at);
-            return createdAt >= thisMonth && createdAt <= now;
+            if (!d || !d.created_at) return false;
+            try {
+                const createdAt = new Date(d.created_at);
+                return createdAt >= thisMonth && createdAt <= now;
+            } catch {
+                return false;
+            }
         }).length;
 
-        // For pending votes, we'd need to check which decisions the user hasn't voted on yet
-        // For now, showing active decisions count as a placeholder
-        const pendingVotes = activeDecisions.length;
+        // Decisions where current user is a participant and hasn't voted yet
+        const pendingVotes = activeDecisions.filter(d => {
+            if (!d.participant_ids || !profile?.id) return false;
+            const isParticipant = d.participant_ids.includes(profile.id);
+            if (!isParticipant) return false;
+            // If votes_count is 0 or undefined, assume user hasn't voted
+            // More precise check: look at the user's own vote_option_id if available
+            const hasVoted = d.user_vote_option_id != null;
+            return !hasVoted;
+        }).length;
 
         return {
             activeDecisions,
@@ -102,9 +114,14 @@ export const Dashboard = () => {
 
                 {stats.activeDecisions.length > 0 ? (
                     <div className="space-y-2">
-                        {stats.activeDecisions.map((decision) => (
-                            <DecisionCard key={decision.id} decision={adaptDecisionForComponents(decision)} />
-                        ))}
+                        {stats.activeDecisions.map((decision) => {
+                            try {
+                                return <DecisionCard key={decision.id} decision={adaptDecisionForComponents(decision)} />;
+                            } catch (error) {
+                                console.error('Error rendering decision:', decision.id, error);
+                                return null;
+                            }
+                        })}
                     </div>
                 ) : (
                     <EmptyState

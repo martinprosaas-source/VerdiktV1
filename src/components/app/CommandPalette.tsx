@@ -13,7 +13,8 @@ import {
     FileText,
     X
 } from 'lucide-react';
-import { decisions, users } from '../../data/mockData';
+import { useDecisions } from '../../hooks/useDecisions';
+import { useTeam } from '../../hooks/useTeam';
 
 interface CommandItem {
     id: string;
@@ -34,6 +35,8 @@ export const CommandPalette = ({ isOpen, onClose }: CommandPaletteProps) => {
     const [selectedIndex, setSelectedIndex] = useState(0);
     const inputRef = useRef<HTMLInputElement>(null);
     const navigate = useNavigate();
+    const { decisions } = useDecisions();
+    const { members } = useTeam();
 
     const allCommands: CommandItem[] = useMemo(() => {
         const navigationCommands: CommandItem[] = [
@@ -106,7 +109,7 @@ export const CommandPalette = ({ isOpen, onClose }: CommandPaletteProps) => {
             },
         ];
 
-        const decisionCommands: CommandItem[] = decisions.map(d => ({
+        const decisionCommands: CommandItem[] = (decisions || []).map((d: any) => ({
             id: `decision-${d.id}`,
             title: d.title,
             subtitle: d.status === 'active' ? 'Active' : 'Terminée',
@@ -115,9 +118,9 @@ export const CommandPalette = ({ isOpen, onClose }: CommandPaletteProps) => {
             category: 'decision',
         }));
 
-        const userCommands: CommandItem[] = users.map(u => ({
+        const userCommands: CommandItem[] = (members || []).map(u => ({
             id: `user-${u.id}`,
-            title: `${u.firstName} ${u.lastName}`,
+            title: `${u.first_name} ${u.last_name}`,
             subtitle: u.email,
             icon: <Users className="w-4 h-4" />,
             action: () => { navigate('/app/team'); onClose(); },
@@ -125,7 +128,7 @@ export const CommandPalette = ({ isOpen, onClose }: CommandPaletteProps) => {
         }));
 
         return [...actionCommands, ...navigationCommands, ...decisionCommands, ...userCommands];
-    }, [navigate, onClose]);
+    }, [navigate, onClose, decisions, members]);
 
     const filteredCommands = useMemo(() => {
         if (!query) return allCommands.slice(0, 10);

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Mail, UserPlus, Copy, Check, Link, ChevronDown, Loader2 } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 
 interface InviteModalProps {
     isOpen: boolean;
@@ -14,8 +15,10 @@ export const InviteModal = ({ isOpen, onClose }: InviteModalProps) => {
     const [copied, setCopied] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
+    const [successCount, setSuccessCount] = useState(0);
 
-    const inviteLink = `https://verdikt.ai/invite/techscale-abc123`;
+    const inviteLink = `${window.location.origin}/signup`;
 
     // Reset state when modal opens
     useEffect(() => {
@@ -24,6 +27,8 @@ export const InviteModal = ({ isOpen, onClose }: InviteModalProps) => {
             setEmailInput('');
             setRole('member');
             setIsSuccess(false);
+            setErrorMessage('');
+            setSuccessCount(0);
         }
     }, [isOpen]);
 
@@ -78,15 +83,33 @@ export const InviteModal = ({ isOpen, onClose }: InviteModalProps) => {
         if (emails.length === 0) return;
         
         setIsLoading(true);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        setIsLoading(false);
-        setIsSuccess(true);
-        
-        // Close modal after success
-        setTimeout(() => {
-            onClose();
-        }, 2000);
+        setErrorMessage('');
+
+        try {
+            const { data, error } = await supabase.functions.invoke('invite-member', {
+                body: { emails, role },
+            });
+
+            if (error) throw error;
+
+            if (data?.success) {
+                setSuccessCount(data.sent || emails.length);
+                setIsSuccess(true);
+                setTimeout(() => onClose(), 3000);
+            } else {
+                const failedEmails = (data?.results || [])
+                    .filter((r: any) => !r.success)
+                    .map((r: any) => r.email)
+                    .join(', ');
+                setErrorMessage(failedEmails
+                    ? `Échec pour : ${failedEmails}`
+                    : 'Une erreur est survenue.');
+            }
+        } catch (err: any) {
+            setErrorMessage(err.message || 'Erreur lors de l\'envoi des invitations.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -277,6 +300,13 @@ export const InviteModal = ({ isOpen, onClose }: InviteModalProps) => {
                                             </div>
                                         </div>
 
+                                        {/* Error message */}
+                                        {errorMessage && (
+                                            <p className="mt-3 text-xs text-red-500 font-medium">
+                                                {errorMessage}
+                                            </p>
+                                        )}
+
                                         {/* Actions */}
                                         <div className="flex gap-3 mt-6">
                                             <button
@@ -321,10 +351,10 @@ export const InviteModal = ({ isOpen, onClose }: InviteModalProps) => {
                                             <Check className="w-7 h-7 text-emerald-500" />
                                         </motion.div>
                                         <h3 className="text-lg font-semibold text-primary mb-1">
-                                            Invitations envoyées ! 🎉
+                                            Invitations envoyées !
                                         </h3>
                                         <p className="text-sm text-secondary">
-                                            {emails.length} invitation{emails.length > 1 ? 's' : ''} envoyée{emails.length > 1 ? 's' : ''} avec succès.
+                                            {successCount} invitation{successCount > 1 ? 's' : ''} envoyée{successCount > 1 ? 's' : ''} avec succès.
                                         </p>
                                     </motion.div>
                                 )}
