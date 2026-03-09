@@ -147,13 +147,14 @@ export const Hero = () => {
                         >
                             <video 
                                 ref={videoRef}
-                                src="/Verdikt Preview 2.mp4"
                                 className="w-full aspect-video"
                                 autoPlay
                                 muted
                                 loop
                                 playsInline
-                            />
+                            >
+                                <source src="/verdikt-hero.mp4" type="video/mp4" />
+                            </video>
 
                             {/* Sound button overlay */}
                             <AnimatePresence>
