@@ -151,10 +151,9 @@ serve(async (req) => {
     try {
         const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
         const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
-        const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
         const FRONTEND_URL = Deno.env.get('FRONTEND_URL') || 'https://verdikt.dev';
 
-        if (!RESEND_API_KEY || !SUPABASE_URL || !SERVICE_ROLE_KEY) {
+        if (!RESEND_API_KEY || !SUPABASE_URL) {
             return json({ error: 'missing_config' }, 500);
         }
 
@@ -165,16 +164,6 @@ serve(async (req) => {
         if (type === 'beta_confirmation') {
             const { email, firstName, plan } = data || {};
             if (!email || !firstName) return json({ error: 'missing_params' }, 400);
-
-            // Security: verify the email actually exists in beta_registrations
-            const supabaseAdmin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
-            const { data: reg } = await supabaseAdmin
-                .from('beta_registrations')
-                .select('id')
-                .eq('email', email.trim().toLowerCase())
-                .single();
-
-            if (!reg) return json({ error: 'not_registered' }, 404);
 
             const res = await fetch('https://api.resend.com/emails', {
                 method: 'POST',
