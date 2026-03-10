@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, Users } from 'lucide-react';
+import { Loader2, Users, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Logo } from '../../components/Logo';
 
@@ -8,6 +8,8 @@ export const JoinTeam = () => {
     const navigate = useNavigate();
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
+    const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [teamName, setTeamName] = useState('');
     const [inviterName, setInviterName] = useState('');
     const [role, setRole] = useState('member');
@@ -62,6 +64,7 @@ export const JoinTeam = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!firstName.trim()) { setError('Prénom requis'); return; }
+        if (!password || password.length < 8) { setError('Mot de passe requis (8 caractères minimum)'); return; }
 
         setIsLoading(true);
         setError('');
@@ -84,8 +87,9 @@ export const JoinTeam = () => {
 
             if (upsertError) throw upsertError;
 
-            // Mark onboarding as complete (invited users skip onboarding)
+            // Set password + mark onboarding as complete
             const { error: metaError } = await supabase.auth.updateUser({
+                password,
                 data: { onboarding_completed: true },
             });
 
@@ -166,6 +170,29 @@ export const JoinTeam = () => {
                             </div>
                         </div>
 
+                        {/* Password */}
+                        <div>
+                            <label className="block text-xs font-medium text-secondary mb-1.5">
+                                Mot de passe <span className="text-emerald-400">*</span>
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="8 caractères minimum"
+                                    className="w-full px-3 py-2.5 pr-10 bg-background border border-border-subtle/30 rounded-lg text-sm text-primary placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-tertiary hover:text-secondary transition-colors"
+                                >
+                                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                </button>
+                            </div>
+                        </div>
+
                         {/* Role info */}
                         <div className="flex items-center gap-2 px-3 py-2.5 bg-zinc-50 dark:bg-white/[0.03] border border-border-subtle/20 rounded-lg">
                             <span className="text-xs text-secondary">Rôle dans l'équipe :</span>
@@ -180,7 +207,7 @@ export const JoinTeam = () => {
 
                         <button
                             type="submit"
-                            disabled={isLoading || !firstName.trim()}
+                            disabled={isLoading || !firstName.trim() || password.length < 8}
                             className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all"
                         >
                             {isLoading ? (
@@ -196,7 +223,7 @@ export const JoinTeam = () => {
                 </div>
 
                 <p className="text-xs text-tertiary text-center mt-4">
-                    Vous pouvez définir votre mot de passe depuis les Paramètres.
+                    Vous pourrez vous reconnecter avec votre email et ce mot de passe.
                 </p>
             </div>
         </div>
