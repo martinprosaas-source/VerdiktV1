@@ -372,7 +372,8 @@ export const Team = () => {
             {/* Invite Modal */}
             <InviteModal 
                 isOpen={isInviteModalOpen} 
-                onClose={() => setIsInviteModalOpen(false)} 
+                onClose={() => setIsInviteModalOpen(false)}
+                onSuccess={refetch}
             />
         </div>
     );

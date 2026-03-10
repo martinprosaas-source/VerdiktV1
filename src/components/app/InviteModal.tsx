@@ -6,9 +6,10 @@ import { supabase } from '../../lib/supabase';
 interface InviteModalProps {
     isOpen: boolean;
     onClose: () => void;
+    onSuccess?: () => void;
 }
 
-export const InviteModal = ({ isOpen, onClose }: InviteModalProps) => {
+export const InviteModal = ({ isOpen, onClose, onSuccess }: InviteModalProps) => {
     const [emails, setEmails] = useState<string[]>([]);
     const [emailInput, setEmailInput] = useState('');
     const [role, setRole] = useState<'admin' | 'member'>('member');
@@ -95,6 +96,7 @@ export const InviteModal = ({ isOpen, onClose }: InviteModalProps) => {
             if (data?.success) {
                 setSuccessCount(data.sent || emails.length);
                 setIsSuccess(true);
+                onSuccess?.();
                 setTimeout(() => onClose(), 3000);
             } else {
                 const failedEmails = (data?.results || [])
