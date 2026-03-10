@@ -179,6 +179,18 @@ export const BetaModal = ({ isOpen, onClose, selectedPlan }: BetaModalProps) => 
                 return;
             }
 
+            // Send confirmation email (fire & forget — non-blocking)
+            supabase.functions.invoke('send-email', {
+                body: {
+                    type: 'beta_confirmation',
+                    data: {
+                        email: email.trim().toLowerCase(),
+                        firstName: firstName.trim(),
+                        plan,
+                    },
+                },
+            }).catch(() => {});
+
             setIsSuccess(true);
         } catch (err: any) {
             setError('Une erreur est survenue. Veuillez réessayer.');
