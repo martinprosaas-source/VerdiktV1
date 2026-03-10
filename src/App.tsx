@@ -10,6 +10,7 @@ import { Landing } from './pages/Landing';
 import { Login } from './pages/auth/Login';
 import { Register } from './pages/auth/Register';
 import { Signup } from './pages/Signup';
+import { JoinTeam } from './pages/auth/JoinTeam';
 import { Onboarding } from './pages/onboarding/Onboarding';
 
 // App pages
@@ -59,6 +60,13 @@ function App() {
             <Route path="/onboarding" element={
               <AuthGuard requireAuth>
                 <Onboarding />
+              </AuthGuard>
+            } />
+
+            {/* Join team - for invited users only */}
+            <Route path="/join" element={
+              <AuthGuard requireAuth>
+                <JoinTeam />
               </AuthGuard>
             } />
             

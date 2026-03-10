@@ -41,21 +41,33 @@ export const AuthGuard = ({
 
             if (user) {
                 const onboardingCompleted = user.user_metadata?.onboarding_completed;
+                const isInvitedUser = !!user.user_metadata?.invited_team_id;
                 const isOnAuthPage = AUTH_PAGES.includes(location.pathname);
+
+                // Determine where an unonboarded user should go
+                const pendingDest = isInvitedUser ? '/join' : '/onboarding';
 
                 // Authenticated user on landing or auth pages → redirect
                 if (location.pathname === '/' || isOnAuthPage) {
-                    navigate(onboardingCompleted ? '/app' : '/onboarding');
+                    navigate(onboardingCompleted ? '/app' : pendingDest);
                     return;
                 }
 
-                if (location.pathname === '/onboarding' && onboardingCompleted) {
+                // Already onboarded → skip onboarding/join
+                if ((location.pathname === '/onboarding' || location.pathname === '/join') && onboardingCompleted) {
                     navigate('/app');
                     return;
                 }
 
+                // Invited user trying to go through onboarding → redirect to /join
+                if (location.pathname === '/onboarding' && isInvitedUser) {
+                    navigate('/join');
+                    return;
+                }
+
+                // App requires completed onboarding
                 if (location.pathname.startsWith('/app') && !onboardingCompleted) {
-                    navigate('/onboarding');
+                    navigate(pendingDest);
                     return;
                 }
             }
