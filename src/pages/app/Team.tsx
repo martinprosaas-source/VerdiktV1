@@ -3,6 +3,7 @@ import { UserPlus, MoreVertical, Clock, Mail, X, RefreshCw, Loader2 } from 'luci
 import { Avatar } from '../../components/app/feedback/Avatar';
 import { InviteModal } from '../../components/app/InviteModal';
 import { useTeam, usePoles, useDelayedLoading } from '../../hooks';
+import type { PendingInvitation } from '../../hooks/useTeam';
 
 const getRoleBadge = (role: string) => {
     const styles = {
@@ -85,16 +86,13 @@ const formatRelativeDate = (date: Date) => {
 };
 
 export const Team = () => {
-    const { members, loading } = useTeam();
+    const { members, pendingInvitations, cancelInvitation, loading, refetch } = useTeam();
     const { poles: polesData } = usePoles();
     const showSpinner = useDelayedLoading(loading);
     const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<'members' | 'pending'>('members');
 
-    // Placeholder for pending invites (would come from Supabase)
-    const pendingInvites: any[] = [];
-
-    const isExpired = (expiresAt: Date) => new Date() > expiresAt;
+    const isExpired = (expiresAt: string) => new Date() > new Date(expiresAt);
 
     if (showSpinner) {
         return (
@@ -111,7 +109,7 @@ export const Team = () => {
                 <div>
                     <h1 className="text-lg sm:text-xl font-semibold text-primary">Équipe</h1>
                     <p className="text-sm text-tertiary">
-                        {members.length} membres • {pendingInvites.length} en attente
+                        {members.length} membres • {pendingInvitations.length} en attente
                     </p>
                 </div>
                 <button 
@@ -144,9 +142,9 @@ export const Team = () => {
                     }`}
                 >
                     En attente
-                    {pendingInvites.length > 0 && (
+                    {pendingInvitations.length > 0 && (
                         <span className="px-1.5 py-0.5 text-xs bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-full">
-                            {pendingInvites.length}
+                            {pendingInvitations.length}
                         </span>
                     )}
                 </button>
@@ -259,13 +257,13 @@ export const Team = () => {
                 <>
                     {/* Pending Invites - Mobile */}
                     <div className="sm:hidden space-y-3">
-                        {pendingInvites.length === 0 ? (
+                        {pendingInvitations.length === 0 ? (
                             <div className="text-center py-8 text-tertiary">
                                 <Mail className="w-8 h-8 mx-auto mb-2 opacity-50" />
                                 <p className="text-sm">Aucune invitation en attente</p>
                             </div>
                         ) : (
-                            pendingInvites.map((invite) => (
+                            pendingInvitations.map((invite: PendingInvitation) => (
                                 <div 
                                     key={invite.id} 
                                     className="bg-card border border-zinc-200 dark:border-white/5 rounded-lg p-4"
@@ -280,33 +278,23 @@ export const Team = () => {
                                                     {invite.email}
                                                 </p>
                                                 <p className="text-xs text-tertiary">
-                                                    Invité par {invite.invitedBy.firstName}
+                                                    Invité {formatRelativeDate(new Date(invite.created_at))}
                                                 </p>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-1">
-                                            <button 
-                                                className="p-1.5 text-tertiary hover:text-emerald-500 transition-colors rounded hover:bg-emerald-500/10"
-                                                title="Renvoyer l'invitation"
-                                            >
-                                                <RefreshCw className="w-4 h-4" />
-                                            </button>
-                                            <button 
-                                                className="p-1.5 text-tertiary hover:text-red-500 transition-colors rounded hover:bg-red-500/10"
-                                                title="Annuler l'invitation"
-                                            >
-                                                <X className="w-4 h-4" />
-                                            </button>
-                                        </div>
+                                        <button 
+                                            onClick={() => cancelInvitation(invite.id)}
+                                            className="p-1.5 text-tertiary hover:text-red-500 transition-colors rounded hover:bg-red-500/10"
+                                            title="Annuler l'invitation"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
                                     </div>
                                     <div className="flex items-center justify-between mt-3 pt-3 border-t border-zinc-200 dark:border-white/5">
                                         <div className="flex items-center gap-2">
-                                            {getStatusBadge(isExpired(invite.expiresAt) ? 'expired' : 'pending')}
+                                            {getStatusBadge(isExpired(invite.expires_at) ? 'expired' : 'pending')}
                                             {getRoleBadge(invite.role)}
                                         </div>
-                                        <span className="text-xs text-tertiary">
-                                            {formatRelativeDate(invite.invitedAt)}
-                                        </span>
                                     </div>
                                 </div>
                             ))
@@ -315,7 +303,7 @@ export const Team = () => {
 
                     {/* Pending Invites - Desktop */}
                     <div className="hidden sm:block bg-card border border-zinc-200 dark:border-white/5 rounded-lg overflow-hidden">
-                        {pendingInvites.length === 0 ? (
+                        {pendingInvitations.length === 0 ? (
                             <div className="text-center py-12 text-tertiary">
                                 <Mail className="w-10 h-10 mx-auto mb-3 opacity-50" />
                                 <p className="text-sm">Aucune invitation en attente</p>
@@ -325,23 +313,15 @@ export const Team = () => {
                             <table className="w-full">
                                 <thead>
                                     <tr className="border-b border-zinc-200 dark:border-white/5">
-                                        <th className="text-left text-[10px] font-medium text-tertiary uppercase tracking-wider px-4 py-3">
-                                            Email
-                                        </th>
-                                        <th className="text-left text-[10px] font-medium text-tertiary uppercase tracking-wider px-4 py-3">
-                                            Rôle
-                                        </th>
-                                        <th className="text-left text-[10px] font-medium text-tertiary uppercase tracking-wider px-4 py-3 hidden md:table-cell">
-                                            Invité par
-                                        </th>
-                                        <th className="text-left text-[10px] font-medium text-tertiary uppercase tracking-wider px-4 py-3">
-                                            Statut
-                                        </th>
-                                        <th className="w-24"></th>
+                                        <th className="text-left text-[10px] font-medium text-tertiary uppercase tracking-wider px-4 py-3">Email</th>
+                                        <th className="text-left text-[10px] font-medium text-tertiary uppercase tracking-wider px-4 py-3">Rôle</th>
+                                        <th className="text-left text-[10px] font-medium text-tertiary uppercase tracking-wider px-4 py-3">Statut</th>
+                                        <th className="text-left text-[10px] font-medium text-tertiary uppercase tracking-wider px-4 py-3 hidden md:table-cell">Invité le</th>
+                                        <th className="w-20"></th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-zinc-200 dark:divide-white/5">
-                                    {pendingInvites.map((invite) => (
+                                    {pendingInvitations.map((invite: PendingInvitation) => (
                                         <tr key={invite.id} className="hover:bg-zinc-50 dark:hover:bg-white/[0.02] transition-colors">
                                             <td className="px-4 py-3">
                                                 <div className="flex items-center gap-3">
@@ -353,31 +333,26 @@ export const Team = () => {
                                                     </span>
                                                 </div>
                                             </td>
+                                            <td className="px-4 py-3">{getRoleBadge(invite.role)}</td>
                                             <td className="px-4 py-3">
-                                                {getRoleBadge(invite.role)}
+                                                {getStatusBadge(isExpired(invite.expires_at) ? 'expired' : 'pending')}
                                             </td>
                                             <td className="px-4 py-3 hidden md:table-cell">
                                                 <span className="text-sm text-tertiary">
-                                                    {invite.invitedBy.firstName} {invite.invitedBy.lastName}
+                                                    {formatRelativeDate(new Date(invite.created_at))}
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3">
-                                                <div className="flex flex-col gap-0.5">
-                                                    {getStatusBadge(isExpired(invite.expiresAt) ? 'expired' : 'pending')}
-                                                    <span className="text-[10px] text-tertiary">
-                                                        {formatRelativeDate(invite.invitedAt)}
-                                                    </span>
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <div className="flex items-center gap-1">
+                                                <div className="flex items-center gap-1 justify-end">
                                                     <button 
+                                                        onClick={() => { refetch(); }}
                                                         className="p-1.5 text-tertiary hover:text-emerald-500 transition-colors rounded hover:bg-emerald-500/10"
-                                                        title="Renvoyer l'invitation"
+                                                        title="Rafraîchir"
                                                     >
                                                         <RefreshCw className="w-4 h-4" />
                                                     </button>
                                                     <button 
+                                                        onClick={() => cancelInvitation(invite.id)}
                                                         className="p-1.5 text-tertiary hover:text-red-500 transition-colors rounded hover:bg-red-500/10"
                                                         title="Annuler l'invitation"
                                                     >

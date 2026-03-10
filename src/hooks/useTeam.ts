@@ -20,6 +20,16 @@ interface TeamMember {
     created_at: string;
 }
 
+export interface PendingInvitation {
+    id: string;
+    email: string;
+    role: 'admin' | 'member';
+    invited_by: string | null;
+    status: 'pending' | 'accepted' | 'expired';
+    created_at: string;
+    expires_at: string;
+}
+
 // Module-level cache
 let cachedTeam: Team | null = null;
 let cachedMembers: TeamMember[] = [];
@@ -29,6 +39,7 @@ export const useTeam = () => {
     const { profile } = useAuth();
     const [team, setTeam] = useState<Team | null>(cachedTeam);
     const [members, setMembers] = useState<TeamMember[]>(cachedMembers);
+    const [pendingInvitations, setPendingInvitations] = useState<PendingInvitation[]>([]);
     const [loading, setLoading] = useState(!cachedTeam);
     const [error, setError] = useState<string | null>(null);
 
@@ -58,8 +69,8 @@ export const useTeam = () => {
         try {
             setLoading(true);
 
-            // Fetch team and members in parallel (2 queries instead of 2 sequential)
-            const [teamResult, membersResult] = await Promise.all([
+            // Fetch team, members and pending invitations in parallel
+            const [teamResult, membersResult, invitationsResult] = await Promise.all([
                 supabase
                     .from('teams')
                     .select('*')
@@ -70,6 +81,12 @@ export const useTeam = () => {
                     .select('*')
                     .eq('team_id', profile.team_id)
                     .order('created_at', { ascending: true }),
+                supabase
+                    .from('invitations')
+                    .select('*')
+                    .eq('team_id', profile.team_id)
+                    .eq('status', 'pending')
+                    .order('created_at', { ascending: false }),
             ]);
 
             if (teamResult.error) throw teamResult.error;
@@ -82,6 +99,7 @@ export const useTeam = () => {
 
             setTeam(teamResult.data);
             setMembers(membersResult.data || []);
+            setPendingInvitations(invitationsResult.data || []);
         } catch (err: any) {
             console.error('Error fetching team:', err);
             setError(err.message);
@@ -108,12 +126,22 @@ export const useTeam = () => {
         }
     };
 
+    const cancelInvitation = async (invitationId: string) => {
+        await supabase
+            .from('invitations')
+            .update({ status: 'expired' })
+            .eq('id', invitationId);
+        setPendingInvitations(prev => prev.filter(i => i.id !== invitationId));
+    };
+
     return {
         team,
         members,
+        pendingInvitations,
         loading,
         error,
         updateMember,
+        cancelInvitation,
         refetch: () => { cachedTeamId = null; fetchAll(); },
     };
 };

@@ -183,6 +183,18 @@ serve(async (req) => {
                     const errData = await emailRes.json();
                     results.push({ email, success: false, error: errData?.message || 'Erreur Resend.' });
                 } else {
+                    // Track invitation in DB (upsert to handle re-invites)
+                    await supabaseAdmin
+                        .from('invitations')
+                        .upsert({
+                            team_id: callerProfile.team_id,
+                            email,
+                            role: validRole,
+                            invited_by: caller.id,
+                            status: 'pending',
+                            expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                        }, { onConflict: 'team_id,email' });
+
                     results.push({ email, success: true });
                 }
             } catch (err: any) {
