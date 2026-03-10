@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './useAuth';
 import { createAuditLog } from '../utils/auditLog';
@@ -45,27 +45,40 @@ interface VoteOption {
     votes_count?: number;
 }
 
+// Module-level cache — survives navigation (like useTeam)
+let cachedDecisions: DecisionWithDetails[] = [];
+let cachedTeamId: string | null = null;
+
 export const useDecisions = () => {
     const { profile } = useAuth();
-    const [decisions, setDecisions] = useState<DecisionWithDetails[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [decisions, setDecisions] = useState<DecisionWithDetails[]>(cachedDecisions);
+    const [loading, setLoading] = useState(!cachedDecisions.length);
     const [error, setError] = useState<string | null>(null);
-    const hasFetched = useRef(false);
 
     useEffect(() => {
-        if (profile?.team_id && !hasFetched.current) {
-            hasFetched.current = true;
-            fetchDecisions();
-        } else if (!profile?.team_id) {
+        if (!profile?.team_id) {
             setLoading(false);
+            return;
         }
+
+        // Serve cache instantly if same team
+        if (cachedTeamId === profile.team_id && cachedDecisions.length > 0) {
+            setDecisions(cachedDecisions);
+            setLoading(false);
+            // Still refetch silently in background to stay fresh
+            fetchDecisions(true);
+            return;
+        }
+
+        // First load for this team
+        fetchDecisions(false);
     }, [profile?.team_id]);
 
-    const fetchDecisions = useCallback(async () => {
+    const fetchDecisions = useCallback(async (silent = false) => {
         if (!profile?.team_id) return;
 
         try {
-            setLoading(true);
+            if (!silent) setLoading(true);
 
             // ONE single query: decisions + creator + pole + options + votes count + participants count
             const { data: decisionsData, error: decisionsError } = await supabase
@@ -142,6 +155,10 @@ export const useDecisions = () => {
                     user_vote_option_id: userVoteByDecision.get(decision.id) || null,
                 };
             });
+
+            // Update module-level cache
+            cachedDecisions = decisionsWithDetails;
+            cachedTeamId = profile.team_id;
 
             setDecisions(decisionsWithDetails);
         } catch (err: any) {
@@ -250,8 +267,8 @@ export const useDecisions = () => {
                 }).catch(() => {});
             }).catch(() => {});
 
-            // Refresh
-            hasFetched.current = false;
+            // Refresh (invalidate cache)
+            cachedTeamId = null;
             await fetchDecisions();
             return newDecision;
         } catch (err: any) {
@@ -336,7 +353,7 @@ export const useDecisions = () => {
                 }
             }
             
-            hasFetched.current = false;
+            cachedTeamId = null;
             await fetchDecisions();
         } catch (err: any) {
             console.error('Error updating decision:', err);
@@ -355,6 +372,6 @@ export const useDecisions = () => {
         createDecision,
         updateDecision,
         getDecisionById,
-        refetch: () => { hasFetched.current = false; fetchDecisions(); },
+        refetch: () => { cachedTeamId = null; fetchDecisions(); },
     };
 };

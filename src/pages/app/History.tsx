@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { Search, Archive, Loader2 } from 'lucide-react';
 import { DecisionCard } from '../../components/app/cards/DecisionCard';
 import { EmptyState } from '../../components/app/feedback/EmptyState';
-import { useDecisions } from '../../hooks';
+import { useDecisions, useDelayedLoading } from '../../hooks';
 import { adaptDecisionForComponents } from '../../utils/decisionAdapter';
 
 export const History = () => {
     const [search, setSearch] = useState('');
     const { decisions, loading } = useDecisions();
+    const showSpinner = useDelayedLoading(loading);
     
     const completedDecisions = decisions.filter(d => 
         d.status === 'completed' || d.status === 'archived'
@@ -17,13 +18,10 @@ export const History = () => {
         decision.title.toLowerCase().includes(search.toLowerCase())
     );
 
-    if (loading) {
+    if (showSpinner) {
         return (
             <div className="flex items-center justify-center h-64">
-                <div className="text-center">
-                    <Loader2 className="w-8 h-8 animate-spin text-emerald-500 mx-auto mb-4" />
-                    <p className="text-sm text-secondary">Chargement de l'historique...</p>
-                </div>
+                <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
             </div>
         );
     }

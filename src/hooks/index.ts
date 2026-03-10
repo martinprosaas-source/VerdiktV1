@@ -5,3 +5,4 @@ export { useDecisions } from './useDecisions';
 export { useAuditLog } from './useAuditLog';
 export { useIntegrations } from './useIntegrations';
 export { useNotifications } from './useNotifications';
+export { useDelayedLoading } from './useDelayedLoading';

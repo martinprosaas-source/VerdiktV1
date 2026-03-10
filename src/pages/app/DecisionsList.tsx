@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Plus, Sparkles, Filter, ArrowUpDown, Clock, AlertTriangle, SortAsc, SortDesc } from 'lucide-react';
 import { DecisionCard } from '../../components/app/cards/DecisionCard';
 import { EmptyState } from '../../components/app/feedback/EmptyState';
+import { DecisionsListSkeleton } from '../../components/app/feedback/Skeleton';
 import { useDecisions, useTeam } from '../../hooks';
 import { adaptDecisionForComponents } from '../../utils/decisionAdapter';
 
@@ -81,16 +82,7 @@ export const DecisionsList = () => {
     const activeCount = decisions.filter(d => d.status === 'active').length;
     const completedCount = decisions.filter(d => d.status === 'completed' || d.status === 'archived').length;
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <div className="text-center">
-                    <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                    <p className="text-sm text-secondary">Chargement des décisions...</p>
-                </div>
-            </div>
-        );
-    }
+    if (loading) return <DecisionsListSkeleton />;
 
     const filters: { key: FilterType; label: string; count: number }[] = [
         { key: 'all', label: 'Toutes', count: decisions.length },

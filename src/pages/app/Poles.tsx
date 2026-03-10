@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Plus, Users, MoreVertical, X, Check, Loader2 } from 'lucide-react';
 import { Avatar } from '../../components/app/feedback/Avatar';
-import { usePoles, useTeam } from '../../hooks';
+import { usePoles, useTeam, useDelayedLoading } from '../../hooks';
 
 const getPoleColor = (hexColor: string) => {
     const colorMap: Record<string, string> = {
@@ -20,6 +20,7 @@ const getPoleColor = (hexColor: string) => {
 export const Poles = () => {
     const { poles: polesData, loading, createPole, updatePole, deletePole } = usePoles();
     const { members, updateMember } = useTeam();
+    const showSpinner = useDelayedLoading(loading);
     
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [editingPole, setEditingPole] = useState<any | null>(null);
@@ -142,13 +143,10 @@ export const Poles = () => {
         { value: '#ef4444', label: 'Rouge', colorClass: 'bg-red-500' },
     ];
 
-    if (loading) {
+    if (showSpinner) {
         return (
             <div className="flex items-center justify-center h-64">
-                <div className="text-center">
-                    <Loader2 className="w-8 h-8 animate-spin text-emerald-500 mx-auto mb-4" />
-                    <p className="text-sm text-secondary">Chargement des pôles...</p>
-                </div>
+                <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
             </div>
         );
     }

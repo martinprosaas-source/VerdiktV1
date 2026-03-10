@@ -3,6 +3,7 @@ import { Plus, Sparkles, Vote, BarChart3, Calendar } from 'lucide-react';
 import { StatCard } from '../../components/app/cards/StatCard';
 import { DecisionCard } from '../../components/app/cards/DecisionCard';
 import { EmptyState } from '../../components/app/feedback/EmptyState';
+import { DashboardSkeleton } from '../../components/app/feedback/Skeleton';
 import { useAuth, useDecisions } from '../../hooks';
 import { adaptDecisionForComponents } from '../../utils/decisionAdapter';
 import { useMemo } from 'react';
@@ -47,16 +48,7 @@ export const Dashboard = () => {
         };
     }, [decisions]);
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <div className="text-center">
-                    <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                    <p className="text-sm text-secondary">Chargement...</p>
-                </div>
-            </div>
-        );
-    }
+    if (loading) return <DashboardSkeleton />;
 
     return (
         <div>

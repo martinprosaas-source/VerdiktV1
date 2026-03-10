@@ -219,20 +219,30 @@ export const Sidebar = () => {
 
                 {/* User */}
                 <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-zinc-50 dark:hover:bg-white/[0.03] transition-colors cursor-pointer">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-medium text-xs">
-                        {profile?.first_name?.[0] || profile?.email?.[0]?.toUpperCase() || '?'}
-                        {profile?.last_name?.[0] || ''}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-primary truncate">
-                            {profile?.first_name && profile?.last_name
-                                ? `${profile.first_name} ${profile.last_name}`
-                                : profile?.email || 'Chargement...'}
-                        </p>
-                        <p className="text-xs text-tertiary truncate">
-                            {profile?.first_name ? profile.email : ''}
-                        </p>
-                    </div>
+                    {profile ? (
+                        <>
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-medium text-xs flex-shrink-0">
+                                {profile.first_name?.[0] || profile.email?.[0]?.toUpperCase() || '?'}
+                                {profile.last_name?.[0] || ''}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-primary truncate">
+                                    {profile.first_name && profile.last_name
+                                        ? `${profile.first_name} ${profile.last_name}`
+                                        : profile.email}
+                                </p>
+                                <p className="text-xs text-tertiary truncate">{profile.email}</p>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-white/10 animate-pulse flex-shrink-0" />
+                            <div className="flex-1 min-w-0 space-y-1.5">
+                                <div className="h-3 bg-zinc-200 dark:bg-white/10 rounded animate-pulse w-24" />
+                                <div className="h-2.5 bg-zinc-200 dark:bg-white/10 rounded animate-pulse w-32" />
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
         </>

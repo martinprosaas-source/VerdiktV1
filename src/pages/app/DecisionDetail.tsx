@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
+import { DecisionDetailSkeleton } from '../../components/app/feedback/Skeleton';
 import { ArrowLeft, Clock, Check, Sparkles, Users, Calendar, Download, Share2, Building2, Loader2, ExternalLink } from 'lucide-react';
 import { StatusBadge, getStatusVariant, getStatusLabel } from '../../components/app/feedback/Badge';
 import { Progress } from '../../components/app/feedback/Progress';
@@ -184,16 +185,7 @@ export const DecisionDetail = () => {
         }
     };
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <div className="text-center">
-                    <Loader2 className="w-8 h-8 animate-spin text-emerald-500 mx-auto mb-4" />
-                    <p className="text-sm text-secondary">Chargement de la décision...</p>
-                </div>
-            </div>
-        );
-    }
+    if (loading) return <DecisionDetailSkeleton />;
 
     if (!decision) {
         return (

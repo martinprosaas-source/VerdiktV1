@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { UserPlus, MoreVertical, Clock, Mail, X, RefreshCw } from 'lucide-react';
+import { UserPlus, MoreVertical, Clock, Mail, X, RefreshCw, Loader2 } from 'lucide-react';
 import { Avatar } from '../../components/app/feedback/Avatar';
 import { InviteModal } from '../../components/app/InviteModal';
-import { useTeam, usePoles } from '../../hooks';
+import { useTeam, usePoles, useDelayedLoading } from '../../hooks';
 
 const getRoleBadge = (role: string) => {
     const styles = {
@@ -87,6 +87,7 @@ const formatRelativeDate = (date: Date) => {
 export const Team = () => {
     const { members, loading } = useTeam();
     const { poles: polesData } = usePoles();
+    const showSpinner = useDelayedLoading(loading);
     const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<'members' | 'pending'>('members');
 
@@ -95,13 +96,10 @@ export const Team = () => {
 
     const isExpired = (expiresAt: Date) => new Date() > expiresAt;
 
-    if (loading) {
+    if (showSpinner) {
         return (
             <div className="flex items-center justify-center h-64">
-                <div className="text-center">
-                    <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                    <p className="text-sm text-secondary">Chargement de l'équipe...</p>
-                </div>
+                <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
             </div>
         );
     }
