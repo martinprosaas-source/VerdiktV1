@@ -98,7 +98,17 @@ const OnboardingContent = () => {
                     }
                 }
 
-                // 5. Mark onboarding as completed
+                // 5. Send invitations via invite-member Edge Function (fire & forget)
+                if (data.inviteEmails.length > 0) {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (session?.access_token) {
+                        supabase.functions.invoke('invite-member', {
+                            body: { emails: data.inviteEmails, role: 'member' },
+                        }).catch(() => {}); // Non-blocking — don't fail onboarding if invites fail
+                    }
+                }
+
+                // 6. Mark onboarding as completed
                 const { error: metadataError } = await supabase.auth.updateUser({
                     data: {
                         onboarding_completed: true,
@@ -108,10 +118,21 @@ const OnboardingContent = () => {
 
                 if (metadataError) throw metadataError;
 
-                // 6. Refresh the cached profile so the app sees updated data
+                // 7. Refresh the cached profile so the app sees updated data
                 await refreshProfile();
 
-                // 7. Navigate to app
+                // 8. Send welcome email (fire & forget — non-blocking)
+                supabase.functions.invoke('send-email', {
+                    body: {
+                        type: 'welcome',
+                        data: {
+                            firstName: data.firstName,
+                            teamName: data.teamName,
+                        },
+                    },
+                }).catch(() => {});
+
+                // 9. Navigate to app
                 navigate('/app');
             } catch (err: any) {
                 console.error('Onboarding error:', err);

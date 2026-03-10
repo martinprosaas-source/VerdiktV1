@@ -1,19 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useOnboarding } from '../../../context/OnboardingContext';
-import { Mail, X, Copy, Check, Link } from 'lucide-react';
+import { Mail, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const StepInvite = () => {
     const { data, updateData, setCanGoNext } = useOnboarding();
     const [emailInput, setEmailInput] = useState('');
-    const [copied, setCopied] = useState(false);
 
     // This step is optional, so always allow next
     useEffect(() => {
         setCanGoNext(true);
     }, [setCanGoNext]);
-
-    const inviteLink = `https://verdikt.dev/invite/${data.workspaceSlug || 'mon-equipe'}`;
 
     const addEmail = () => {
         const email = emailInput.trim();
@@ -36,12 +33,6 @@ export const StepInvite = () => {
             e.preventDefault();
             addEmail();
         }
-    };
-
-    const copyLink = async () => {
-        await navigator.clipboard.writeText(inviteLink);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
     };
 
     return (
@@ -112,51 +103,6 @@ export const StepInvite = () => {
                 )}
             </AnimatePresence>
 
-            {/* Divider */}
-            <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-zinc-200 dark:border-white/10" />
-                </div>
-                <div className="relative flex justify-center text-sm">
-                    <span className="px-4 bg-background text-tertiary">ou</span>
-                </div>
-            </div>
-
-            {/* Invite link */}
-            <div>
-                <label className="block text-sm font-medium text-primary mb-2">
-                    Partager le lien d'invitation
-                </label>
-                <div className="flex items-center gap-2 p-3 bg-zinc-50 dark:bg-white/5 rounded-xl border border-zinc-200 dark:border-white/10">
-                    <Link className="w-5 h-5 text-tertiary flex-shrink-0" />
-                    <span className="flex-1 text-sm text-secondary font-mono truncate">
-                        {inviteLink}
-                    </span>
-                    <motion.button
-                        onClick={copyLink}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                            copied 
-                                ? 'bg-emerald-500 text-white' 
-                                : 'bg-zinc-200 dark:bg-white/10 text-primary hover:bg-zinc-300 dark:hover:bg-white/20'
-                        }`}
-                    >
-                        {copied ? (
-                            <>
-                                <Check className="w-4 h-4" />
-                                Copié !
-                            </>
-                        ) : (
-                            <>
-                                <Copy className="w-4 h-4" />
-                                Copier
-                            </>
-                        )}
-                    </motion.button>
-                </div>
-            </div>
-
             {/* Summary */}
             {data.inviteEmails.length > 0 && (
                 <motion.div
@@ -165,7 +111,7 @@ export const StepInvite = () => {
                     className="p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-xl"
                 >
                     <p className="text-sm text-primary">
-                        <span className="font-medium text-emerald-500">{data.inviteEmails.length}</span> invitation{data.inviteEmails.length > 1 ? 's' : ''} sera{data.inviteEmails.length > 1 ? 'ont' : ''} envoyée{data.inviteEmails.length > 1 ? 's' : ''} à la fin de l'onboarding.
+                        <span className="font-medium text-emerald-500">{data.inviteEmails.length}</span> invitation{data.inviteEmails.length > 1 ? 's' : ''} ser{data.inviteEmails.length > 1 ? 'ont' : 'a'} envoyée{data.inviteEmails.length > 1 ? 's' : ''} par email à la fin de l'onboarding.
                     </p>
                 </motion.div>
             )}
