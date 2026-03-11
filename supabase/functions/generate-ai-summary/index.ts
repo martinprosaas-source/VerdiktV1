@@ -114,30 +114,30 @@ Règles:
 - "concerns" : 0 à 3 éléments, seulement s'il y a de vraies tensions ou risques détectés
 - Réponds dans la même langue que la décision (français ou anglais)`;
 
-        const openaiKey = Deno.env.get('OPENAI_API_KEY');
-        if (!openaiKey) throw new Error('OPENAI_API_KEY secret not configured');
+        const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
+        if (!anthropicKey) throw new Error('ANTHROPIC_API_KEY secret not configured');
 
-        const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+        const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${openaiKey}`,
+                'x-api-key': anthropicKey,
+                'anthropic-version': '2023-06-01',
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                model: 'gpt-4o-mini',
-                messages: [{ role: 'user', content: prompt }],
-                temperature: 0.3,
+                model: 'claude-haiku-4-5',
                 max_tokens: 600,
+                messages: [{ role: 'user', content: prompt }],
             }),
         });
 
-        if (!openaiRes.ok) {
-            const errText = await openaiRes.text();
-            throw new Error(`OpenAI error: ${openaiRes.status} — ${errText}`);
+        if (!claudeRes.ok) {
+            const errText = await claudeRes.text();
+            throw new Error(`Anthropic error: ${claudeRes.status} — ${errText}`);
         }
 
-        const aiData = await openaiRes.json();
-        const rawContent: string = aiData.choices?.[0]?.message?.content?.trim() || '{}';
+        const aiData = await claudeRes.json();
+        const rawContent: string = aiData.content?.[0]?.text?.trim() || '{}';
 
         let summary: { result: string; recommendation: string; concerns: string[] };
         try {

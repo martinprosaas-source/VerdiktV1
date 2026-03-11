@@ -45,6 +45,8 @@ export const DecisionDetail = () => {
     const [localArguments, setLocalArguments] = useState<Argument[]>([]);
     const [userVote, setUserVote] = useState<string | null>(null);
     const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+    const [isCompleting, setIsCompleting] = useState(false);
+    const [confirmComplete, setConfirmComplete] = useState(false);
 
     const notionConnected = !!getIntegration('notion');
 
@@ -407,6 +409,38 @@ export const DecisionDetail = () => {
         }
     };
 
+    const handleCompleteDecision = async () => {
+        if (!id || !profile?.id) return;
+        setIsCompleting(true);
+        setConfirmComplete(false);
+        try {
+            await supabase
+                .from('decisions')
+                .update({ status: 'completed', completed_at: new Date().toISOString() })
+                .eq('id', id);
+
+            setDecision((prev: any) => ({ ...prev, status: 'completed' }));
+
+            // Trigger AI summary (non-blocking)
+            supabase.functions.invoke('generate-ai-summary', {
+                body: { decision_id: id },
+            }).then(() => {}, () => {});
+
+            try {
+                await createAuditLog({
+                    userId: profile.id,
+                    action: 'decision_completed',
+                    details: `A terminé la décision "${decision?.title}"`,
+                    decisionId: id,
+                });
+            } catch { /* silent */ }
+        } catch (error) {
+            console.error('Error completing decision:', error);
+        } finally {
+            setIsCompleting(false);
+        }
+    };
+
     const exportToPDF = () => {
         // Create a simple text export (in production, use a proper PDF library)
         const content = `
@@ -555,6 +589,40 @@ Recommandation: ${decision.aiSummary.recommendation}
                     </div>
                 </div>
                 <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                    {/* Complete decision button — visible only when active */}
+                    {isActive && (
+                        confirmComplete ? (
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-xs text-tertiary hidden sm:inline">Confirmer ?</span>
+                                <button
+                                    onClick={handleCompleteDecision}
+                                    disabled={isCompleting}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-emerald-500 hover:bg-emerald-600 text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isCompleting ? (
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    ) : (
+                                        <Check className="w-3.5 h-3.5" />
+                                    )}
+                                    Oui, terminer
+                                </button>
+                                <button
+                                    onClick={() => setConfirmComplete(false)}
+                                    className="px-2.5 py-1.5 rounded-lg text-sm font-medium bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 text-secondary hover:text-primary transition-all"
+                                >
+                                    Annuler
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => setConfirmComplete(true)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 text-primary hover:bg-emerald-500/10 hover:border-emerald-500/30 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all"
+                            >
+                                <Check className="w-3.5 h-3.5" />
+                                <span className="hidden sm:inline">Terminer</span>
+                            </button>
+                        )
+                    )}
                     {notionConnected && (
                         <button
                             onClick={handleExportToNotion}
