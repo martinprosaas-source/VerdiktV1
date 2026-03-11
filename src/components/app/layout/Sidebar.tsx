@@ -224,20 +224,12 @@ export const Sidebar = () => {
                 </button>
 
                 {/* Language Toggle */}
-                <div className="flex items-center justify-between px-2 py-1">
+                <div className="px-2 py-1">
                     <LanguageToggle />
-                    <button
-                        onClick={signOut}
-                        className="flex items-center gap-1.5 px-2 py-1 text-xs text-tertiary hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-                        title={t('app.sidebar.signOut')}
-                    >
-                        <LogOut className="w-3.5 h-3.5" />
-                        <span className="hidden xl:inline">{t('app.sidebar.signOut')}</span>
-                    </button>
                 </div>
 
-                {/* User */}
-                <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-zinc-50 dark:hover:bg-white/[0.03] transition-colors cursor-pointer">
+                {/* User + Sign out */}
+                <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-zinc-50 dark:hover:bg-white/[0.03] transition-colors group">
                     {profile ? (
                         <>
                             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-medium text-xs flex-shrink-0">
@@ -252,6 +244,13 @@ export const Sidebar = () => {
                                 </p>
                                 <p className="text-xs text-tertiary truncate">{profile.email}</p>
                             </div>
+                            <button
+                                onClick={signOut}
+                                className="flex-shrink-0 p-1.5 text-tertiary hover:text-red-500 hover:bg-red-500/10 rounded-md transition-colors opacity-0 group-hover:opacity-100"
+                                title={t('app.sidebar.signOut')}
+                            >
+                                <LogOut className="w-3.5 h-3.5" />
+                            </button>
                         </>
                     ) : (
                         <>
