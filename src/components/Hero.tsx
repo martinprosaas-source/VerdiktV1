@@ -168,7 +168,7 @@ export const Hero = () => {
                                         className="absolute top-4 right-4 flex items-center gap-2 px-4 py-2.5 bg-zinc-900/80 hover:bg-zinc-900 backdrop-blur-sm rounded-full border border-white/10 transition-colors cursor-pointer group"
                                     >
                                         <Volume2 className="w-4 h-4 text-white" />
-                                        <span className="text-sm font-medium text-white">Cliquez pour le son</span>
+                                        <span className="text-sm font-medium text-white">{t('landing.hero.sound')}</span>
                                         <motion.div
                                             animate={{ scale: [1, 1.2, 1] }}
                                             transition={{ duration: 1.5, repeat: Infinity }}

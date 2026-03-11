@@ -47,9 +47,9 @@ const en = {
         },
         hero: {
             badge: 'Open Beta — 75 spots max',
-            title1: 'Stop debating.',
-            title2: 'Start deciding.',
-            title2prefix: 'Start ',
+            title1: 'Stop the endless debates.',
+            title2: 'Start actually deciding.',
+            title2prefix: 'Start actually ',
             title2word: 'deciding',
             subtitle: 'Verdikt structures your team decisions, collects everyone\'s input, and gives you a clear recommendation.',
             subtitleEmphasis: 'No 2-hour meeting needed',
