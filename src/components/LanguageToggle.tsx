@@ -39,7 +39,7 @@ export const LanguageToggle = ({ className = '', variant = 'default' }: Language
         : 'flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium text-tertiary hover:text-primary hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors';
 
     const dropdownBase = variant === 'landing'
-        ? 'absolute bottom-full mb-1 right-0 w-36 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-xl shadow-lg overflow-hidden z-50'
+        ? 'absolute top-full mt-1 right-0 w-36 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-xl shadow-lg overflow-hidden z-50'
         : 'absolute bottom-full mb-1 right-0 w-36 bg-card border border-zinc-200 dark:border-white/10 rounded-xl shadow-lg overflow-hidden z-50';
 
     return (
