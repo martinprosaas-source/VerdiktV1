@@ -47,7 +47,7 @@ const en = {
         },
         hero: {
             badge: 'Open Beta — 75 spots max',
-            title1: 'Stop the endless debates.',
+            title1: 'Stop debating.',
             title2: 'Start actually deciding.',
             title2prefix: 'Start actually ',
             title2word: 'deciding',
