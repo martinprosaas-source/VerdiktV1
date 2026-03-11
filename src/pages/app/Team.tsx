@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { UserPlus, MoreVertical, Clock, Mail, X, RefreshCw, Loader2 } from 'lucide-react';
 import { Avatar } from '../../components/app/feedback/Avatar';
 import { InviteModal } from '../../components/app/InviteModal';
-import { useTeam, usePoles, useDelayedLoading } from '../../hooks';
+import { useTeam, usePoles, useDelayedLoading, useAuth } from '../../hooks';
 import type { PendingInvitation } from '../../hooks/useTeam';
 
 const getRoleBadge = (role: string) => {
@@ -88,6 +88,7 @@ const formatRelativeDate = (date: Date) => {
 export const Team = () => {
     const { members, pendingInvitations, cancelInvitation, loading, refetch } = useTeam();
     const { poles: polesData } = usePoles();
+    const { canManage } = useAuth();
     const showSpinner = useDelayedLoading(loading);
     const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<'members' | 'pending'>('members');
@@ -112,13 +113,15 @@ export const Team = () => {
                         {members.length} membres • {pendingInvitations.length} en attente
                     </p>
                 </div>
-                <button 
-                    onClick={() => setIsInviteModalOpen(true)}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 sm:py-1.5 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-medium rounded-lg transition-colors"
-                >
-                    <UserPlus className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Inviter</span>
-                </button>
+                {canManage && (
+                    <button 
+                        onClick={() => setIsInviteModalOpen(true)}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 sm:py-1.5 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-medium rounded-lg transition-colors"
+                    >
+                        <UserPlus className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Inviter</span>
+                    </button>
+                )}
             </div>
 
             {/* Tabs */}
@@ -282,13 +285,15 @@ export const Team = () => {
                                                 </p>
                                             </div>
                                         </div>
-                                        <button 
-                                            onClick={() => cancelInvitation(invite.id)}
-                                            className="p-1.5 text-tertiary hover:text-red-500 transition-colors rounded hover:bg-red-500/10"
-                                            title="Annuler l'invitation"
-                                        >
-                                            <X className="w-4 h-4" />
-                                        </button>
+                                        {canManage && (
+                                            <button 
+                                                onClick={() => cancelInvitation(invite.id)}
+                                                className="p-1.5 text-tertiary hover:text-red-500 transition-colors rounded hover:bg-red-500/10"
+                                                title="Annuler l'invitation"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        )}
                                     </div>
                                     <div className="flex items-center justify-between mt-3 pt-3 border-t border-zinc-200 dark:border-white/5">
                                         <div className="flex items-center gap-2">
@@ -351,13 +356,15 @@ export const Team = () => {
                                                     >
                                                         <RefreshCw className="w-4 h-4" />
                                                     </button>
-                                                    <button 
-                                                        onClick={() => cancelInvitation(invite.id)}
-                                                        className="p-1.5 text-tertiary hover:text-red-500 transition-colors rounded hover:bg-red-500/10"
-                                                        title="Annuler l'invitation"
-                                                    >
-                                                        <X className="w-4 h-4" />
-                                                    </button>
+                                                    {canManage && (
+                                                        <button 
+                                                            onClick={() => cancelInvitation(invite.id)}
+                                                            className="p-1.5 text-tertiary hover:text-red-500 transition-colors rounded hover:bg-red-500/10"
+                                                            title="Annuler l'invitation"
+                                                        >
+                                                            <X className="w-4 h-4" />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>

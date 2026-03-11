@@ -24,24 +24,26 @@ import { CommandPalette } from '../CommandPalette';
 import { NotificationCenter } from '../NotificationCenter';
 import { Logo } from '../../Logo';
 
-const navigation = [
-    { name: 'Dashboard', href: '/app', icon: LayoutDashboard, shortcut: 'D' },
-    { name: 'Décisions', href: '/app/decisions', icon: Vote, shortcut: null },
-    { name: 'Historique', href: '/app/history', icon: History, shortcut: null },
-    { name: 'Analytics', href: '/app/analytics', icon: BarChart3, shortcut: null },
-    { name: 'Équipe', href: '/app/team', icon: Users, shortcut: null },
-    { name: 'Pôles', href: '/app/poles', icon: Building2, shortcut: null },
-    { name: 'Audit Log', href: '/app/audit', icon: FileText, shortcut: null },
-    { name: 'Paramètres', href: '/app/settings', icon: Settings, shortcut: null },
+const allNavigation = [
+    { name: 'Dashboard', href: '/app', icon: LayoutDashboard, shortcut: 'D', adminOnly: false },
+    { name: 'Décisions', href: '/app/decisions', icon: Vote, shortcut: null, adminOnly: false },
+    { name: 'Historique', href: '/app/history', icon: History, shortcut: null, adminOnly: false },
+    { name: 'Analytics', href: '/app/analytics', icon: BarChart3, shortcut: null, adminOnly: false },
+    { name: 'Équipe', href: '/app/team', icon: Users, shortcut: null, adminOnly: false },
+    { name: 'Pôles', href: '/app/poles', icon: Building2, shortcut: null, adminOnly: false },
+    { name: 'Audit Log', href: '/app/audit', icon: FileText, shortcut: null, adminOnly: true },
+    { name: 'Paramètres', href: '/app/settings', icon: Settings, shortcut: null, adminOnly: false },
 ];
 
 export const Sidebar = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const { theme, setTheme } = useTheme();
-    const { profile } = useAuth();
+    const { profile, canManage } = useAuth();
     const { unreadCount: unreadNotifications } = useNotifications();
     const pendingVotes = 0;
+
+    const navigation = allNavigation.filter(item => !item.adminOnly || canManage);
 
     const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
     const [notificationsOpen, setNotificationsOpen] = useState(false);

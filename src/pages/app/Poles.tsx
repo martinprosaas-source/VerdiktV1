@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Plus, Users, MoreVertical, X, Check, Loader2 } from 'lucide-react';
 import { Avatar } from '../../components/app/feedback/Avatar';
-import { usePoles, useTeam, useDelayedLoading } from '../../hooks';
+import { usePoles, useTeam, useDelayedLoading, useAuth } from '../../hooks';
 
 const getPoleColor = (hexColor: string) => {
     const colorMap: Record<string, string> = {
@@ -20,6 +20,7 @@ const getPoleColor = (hexColor: string) => {
 export const Poles = () => {
     const { poles: polesData, loading, createPole, updatePole, deletePole } = usePoles();
     const { members, updateMember } = useTeam();
+    const { canManage } = useAuth();
     const showSpinner = useDelayedLoading(loading);
     
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -161,13 +162,15 @@ export const Poles = () => {
                         {polesData.length} pôles • {members.length} membres
                     </p>
                 </div>
-                <button 
-                    onClick={() => setIsCreateModalOpen(true)}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 sm:py-1.5 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-medium rounded-lg transition-colors"
-                >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Nouveau pôle</span>
-                </button>
+                {canManage && (
+                    <button 
+                        onClick={() => setIsCreateModalOpen(true)}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 sm:py-1.5 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-medium rounded-lg transition-colors"
+                    >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Nouveau pôle</span>
+                    </button>
+                )}
             </div>
 
             {/* Poles Grid */}
@@ -194,21 +197,23 @@ export const Poles = () => {
                                         {pole.description}
                                     </p>
                                 </div>
-                                <div className="flex gap-2">
-                                    <button 
-                                        onClick={() => handleEditPole(pole)}
-                                        className="p-1.5 text-tertiary hover:text-primary transition-colors rounded hover:bg-zinc-100 dark:hover:bg-white/5"
-                                    >
-                                        <MoreVertical className="w-4 h-4" />
-                                    </button>
-                                    <button 
-                                        onClick={() => handleDeletePole(pole.id)}
-                                        className="p-1.5 text-red-500 hover:text-red-600 transition-colors rounded hover:bg-red-500/10"
-                                        title="Supprimer le pôle"
-                                    >
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                </div>
+                                {canManage && (
+                                    <div className="flex gap-2">
+                                        <button 
+                                            onClick={() => handleEditPole(pole)}
+                                            className="p-1.5 text-tertiary hover:text-primary transition-colors rounded hover:bg-zinc-100 dark:hover:bg-white/5"
+                                        >
+                                            <MoreVertical className="w-4 h-4" />
+                                        </button>
+                                        <button 
+                                            onClick={() => handleDeletePole(pole.id)}
+                                            className="p-1.5 text-red-500 hover:text-red-600 transition-colors rounded hover:bg-red-500/10"
+                                            title="Supprimer le pôle"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Members List */}

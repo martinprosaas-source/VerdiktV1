@@ -185,5 +185,7 @@ export const useAuth = () => {
         isAuthenticated: !!user,
         isBetaUser: user?.user_metadata?.is_beta_user ?? false,
         onboardingCompleted: user?.user_metadata?.onboarding_completed ?? false,
+        isOwner: profile?.role === 'owner',
+        canManage: profile?.role === 'owner' || profile?.role === 'admin',
     };
 };

@@ -12,7 +12,7 @@ import {
     Download,
     Loader2
 } from 'lucide-react';
-import { useAuditLog, useTeam } from '../../hooks';
+import { useAuditLog, useTeam, useAuth } from '../../hooks';
 import { Avatar } from '../../components/app/feedback/Avatar';
 import type { AuditActionType } from '../../types';
 
@@ -109,6 +109,17 @@ export const AuditLog = () => {
     const [selectedUser, setSelectedUser] = useState<string>('all');
     const { logs, loading } = useAuditLog();
     const { members, loading: loadingMembers } = useTeam();
+    const { canManage } = useAuth();
+
+    if (!canManage) {
+        return (
+            <div className="flex flex-col items-center justify-center h-64 text-center">
+                <Shield className="w-10 h-10 text-tertiary mb-3 opacity-50" />
+                <h2 className="text-base font-semibold text-primary mb-1">Accès restreint</h2>
+                <p className="text-sm text-tertiary">L'audit log est réservé aux admins et owners.</p>
+            </div>
+        );
+    }
 
     const filteredLog = logs.filter(entry => {
         // Filter by type
