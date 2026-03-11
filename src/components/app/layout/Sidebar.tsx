@@ -18,8 +18,10 @@ import {
     Menu,
     X,
     Building2,
-    LogOut
+    LogOut,
+    MessageSquarePlus
 } from 'lucide-react';
+import { FeedbackModal } from '../FeedbackModal';
 import { useTheme } from '../../ThemeProvider';
 import { useAuth, useNotifications } from '../../../hooks';
 import { CommandPalette } from '../CommandPalette';
@@ -51,6 +53,7 @@ export const Sidebar = () => {
 
     const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
     const [notificationsOpen, setNotificationsOpen] = useState(false);
+    const [feedbackOpen, setFeedbackOpen] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     const isActive = (href: string) => {
@@ -187,6 +190,16 @@ export const Sidebar = () => {
 
             {/* Bottom section */}
             <div className="px-3 py-3 border-t border-zinc-200 dark:border-white/5 space-y-1">
+                {/* Feedback */}
+                <button
+                    onClick={() => setFeedbackOpen(true)}
+                    className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg text-sm text-secondary hover:text-emerald-500 hover:bg-emerald-500/5 transition-colors group"
+                >
+                    <MessageSquarePlus className="w-4 h-4 group-hover:text-emerald-500" />
+                    <span className="flex-1 text-left">Feedback beta</span>
+                    <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 rounded-full">beta</span>
+                </button>
+
                 {/* Notifications */}
                 <button
                     onClick={() => { setNotificationsOpen(!notificationsOpen); setMobileMenuOpen(false); }}
@@ -330,6 +343,11 @@ export const Sidebar = () => {
                 isOpen={notificationsOpen} 
                 onClose={() => setNotificationsOpen(false)} 
             />
+
+            {/* Feedback Modal */}
+            {feedbackOpen && (
+                <FeedbackModal onClose={() => setFeedbackOpen(false)} />
+            )}
         </>
     );
 };
