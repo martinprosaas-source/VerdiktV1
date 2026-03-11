@@ -139,9 +139,15 @@ Règles:
         const aiData = await claudeRes.json();
         const rawContent: string = aiData.content?.[0]?.text?.trim() || '{}';
 
+        // Strip markdown code fences if Claude wraps in ```json ... ```
+        const cleaned = rawContent
+            .replace(/^```(?:json)?\s*/i, '')
+            .replace(/\s*```$/i, '')
+            .trim();
+
         let summary: { result: string; recommendation: string; concerns: string[] };
         try {
-            summary = JSON.parse(rawContent);
+            summary = JSON.parse(cleaned);
         } catch {
             summary = {
                 result: optionsWithVotes[0]

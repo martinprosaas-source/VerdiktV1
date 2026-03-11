@@ -229,8 +229,8 @@ export const DecisionDetail = () => {
         );
     }
 
-    const totalVotes = decision.votes_count || 0;
-    const totalParticipants = decision.participants_count || 0;
+    const totalVotes = (decision.options || []).reduce((sum: number, opt: any) => sum + (opt.votes_count || 0), 0);
+    const totalParticipants = decision.participants?.length || 0;
     const hasVoted = !!userVote;
     const isActive = decision.status === 'active';
     const winningOption = [...decision.options].sort((a, b) => (b.votes_count || 0) - (a.votes_count || 0))[0];
