@@ -13,15 +13,10 @@ export const Footer = () => {
         ],
         resources: [
             { label: t('landing.footer.docs'), href: '#' },
-            { label: t('landing.footer.blog'), href: '#' },
-            { label: t('landing.footer.guides'), href: '#' },
-            { label: t('landing.footer.api'), href: '#' },
         ],
         company: [
             { label: t('landing.footer.about'), href: '#' },
-            { label: t('landing.footer.careers'), href: '#' },
             { label: t('landing.footer.contact'), href: '#' },
-            { label: t('landing.footer.press'), href: '#' },
         ],
         legal: [
             { label: t('landing.footer.privacy'), href: '#' },
