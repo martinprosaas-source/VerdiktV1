@@ -44,6 +44,7 @@ export const DecisionDetail = () => {
     const [gcalConnected, setGcalConnected] = useState(false);
     const [localArguments, setLocalArguments] = useState<Argument[]>([]);
     const [userVote, setUserVote] = useState<string | null>(null);
+    const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
 
     const notionConnected = !!getIntegration('notion');
 
@@ -56,6 +57,30 @@ export const DecisionDetail = () => {
             fetchDecisionDetails();
         }
     }, [id]);
+
+    // Auto-generate AI summary when decision is completed but has no summary yet
+    useEffect(() => {
+        if (!decision || decision.status !== 'completed' || decision.aiSummary) return;
+
+        let cancelled = false;
+        const generateSummary = async () => {
+            setIsGeneratingSummary(true);
+            try {
+                const { data } = await supabase.functions.invoke('generate-ai-summary', {
+                    body: { decision_id: decision.id },
+                });
+                if (!cancelled && data?.summary) {
+                    setDecision((prev: any) => ({ ...prev, aiSummary: data.summary }));
+                }
+            } catch {
+                // Silent fail — summary will appear on next load
+            } finally {
+                if (!cancelled) setIsGeneratingSummary(false);
+            }
+        };
+        generateSummary();
+        return () => { cancelled = true; };
+    }, [decision?.id, decision?.status]);
 
     const fetchDecisionDetails = async () => {
         if (!id) return;
@@ -129,6 +154,7 @@ export const DecisionDetail = () => {
             const fullDecision = {
                 ...decisionData,
                 vote_options: undefined,
+                aiSummary: decisionData.ai_summary || null,
                 creator: decisionData.creator ? {
                     id: decisionData.creator.id,
                     firstName: decisionData.creator.first_name,
@@ -728,7 +754,7 @@ Recommandation: ${decision.aiSummary.recommendation}
                     </section>
 
                     {/* AI Summary */}
-                    {decision.aiSummary && (
+                    {(decision.status === 'completed' || decision.status === 'archived') && (
                         <section className="bg-gradient-to-br from-emerald-500/10 to-blue-500/10 border border-emerald-500/20 rounded-lg p-5">
                             <div className="flex items-center gap-2 mb-4">
                                 <Sparkles className="w-4 h-4 text-emerald-500" />
@@ -736,30 +762,39 @@ Recommandation: ${decision.aiSummary.recommendation}
                                     Synthèse IA
                                 </h2>
                             </div>
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <h3 className="text-xs font-medium text-tertiary mb-1">Résultat</h3>
-                                    <p className="text-sm text-primary">{decision.aiSummary.result}</p>
+
+                            {isGeneratingSummary && !decision.aiSummary ? (
+                                <div className="flex items-center gap-3 py-2">
+                                    <Loader2 className="w-4 h-4 text-emerald-500 animate-spin shrink-0" />
+                                    <p className="text-sm text-secondary">Analyse des votes et arguments en cours…</p>
                                 </div>
-                                <div>
-                                    <h3 className="text-xs font-medium text-tertiary mb-1">Recommandation</h3>
-                                    <p className="text-sm text-secondary leading-relaxed">{decision.aiSummary.recommendation}</p>
-                                </div>
-                                {decision.aiSummary.concerns && decision.aiSummary.concerns.length > 0 && (
-                                    <div className="md:col-span-2">
-                                        <h3 className="text-xs font-medium text-tertiary mb-1">Points d'attention</h3>
-                                        <ul className="grid grid-cols-1 md:grid-cols-2 gap-1">
-                                            {decision.aiSummary.concerns.map((concern: string, i: number) => (
-                                                <li key={i} className="text-sm text-secondary flex items-start gap-2">
-                                                    <span className="text-emerald-500 mt-1">•</span>
-                                                    {concern}
-                                                </li>
-                                            ))}
-                                        </ul>
+                            ) : decision.aiSummary ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <h3 className="text-xs font-medium text-tertiary mb-1">Résultat</h3>
+                                        <p className="text-sm text-primary">{decision.aiSummary.result}</p>
                                     </div>
-                                )}
-                            </div>
+                                    <div>
+                                        <h3 className="text-xs font-medium text-tertiary mb-1">Recommandation</h3>
+                                        <p className="text-sm text-secondary leading-relaxed">{decision.aiSummary.recommendation}</p>
+                                    </div>
+                                    {decision.aiSummary.concerns && decision.aiSummary.concerns.length > 0 && (
+                                        <div className="md:col-span-2">
+                                            <h3 className="text-xs font-medium text-tertiary mb-1">Points d'attention</h3>
+                                            <ul className="grid grid-cols-1 md:grid-cols-2 gap-1">
+                                                {decision.aiSummary.concerns.map((concern: string, i: number) => (
+                                                    <li key={i} className="text-sm text-secondary flex items-start gap-2">
+                                                        <span className="text-emerald-500 mt-1">•</span>
+                                                        {concern}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <p className="text-sm text-tertiary">La synthèse sera disponible prochainement.</p>
+                            )}
                         </section>
                     )}
 

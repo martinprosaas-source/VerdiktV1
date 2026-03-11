@@ -170,6 +170,13 @@ export const useDecisions = () => {
                     .in('id', expiredIds)
                     .then(() => {}, () => {});
 
+                // Trigger AI summary for each expired decision (non-blocking)
+                expiredIds.forEach(id => {
+                    supabase.functions.invoke('generate-ai-summary', {
+                        body: { decision_id: id },
+                    }).then(() => {}, () => {});
+                });
+
                 // Update local data immediately so UI reflects correct status
                 expiredIds.forEach(id => {
                     const d = decisionsWithDetails.find(d => d.id === id);
@@ -336,6 +343,11 @@ export const useDecisions = () => {
                             participation_rate: participationRate,
                         },
                     }).catch(() => {});
+
+                    // Trigger AI summary generation (non-blocking)
+                    supabase.functions.invoke('generate-ai-summary', {
+                        body: { decision_id: decisionId },
+                    }).then(() => {}, () => {});
 
                     exportToNotion({
                         teamId: profile.team_id,
