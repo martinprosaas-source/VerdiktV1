@@ -104,34 +104,6 @@ export const Footer = () => {
                             </ul>
                         </div>
 
-                        {/* Resources */}
-                        <div>
-                            <h4 className="text-sm font-semibold text-primary mb-4">{t('landing.footer.resources')}</h4>
-                            <ul className="space-y-3">
-                                {footerLinks.resources.map((link) => (
-                                    <li key={link.label}>
-                                        <a href={link.href} className="text-sm text-tertiary hover:text-primary transition-colors">
-                                            {link.label}
-                                        </a>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-
-                        {/* Company */}
-                        <div>
-                            <h4 className="text-sm font-semibold text-primary mb-4">{t('landing.footer.company')}</h4>
-                            <ul className="space-y-3">
-                                {footerLinks.company.map((link) => (
-                                    <li key={link.label}>
-                                        <a href={link.href} className="text-sm text-tertiary hover:text-primary transition-colors">
-                                            {link.label}
-                                        </a>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-
                         {/* Legal */}
                         <div>
                             <h4 className="text-sm font-semibold text-primary mb-4">{t('landing.footer.legal')}</h4>
