@@ -1,68 +1,51 @@
+import { useTranslation } from 'react-i18next';
 import { Section, FadeIn } from './ui/Section';
 import { Check, ArrowRight, Crown, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useBetaModal, type SelectedPlan } from '../context/BetaModalContext';
 
-const plans = [
+const plansConfig = [
     {
-        name: 'Free',
-        members: '5 membres',
+        key: 'free',
         price: '0',
         period: '€',
-        originalPrice: null,
-        monthlyEquivalent: null,
-        pricePerUser: null,
-        description: '5 décisions/mois',
-        features: [
-            'Décisions limitées',
-            'Synthèse IA',
-            'Decision Log',
-        ],
-        cta: 'Commencer gratuitement',
+        hasOriginalPrice: false,
+        hasMonthly: false,
+        hasPerUser: false,
         highlighted: false,
         founding: false,
+        isFree: true,
+        featureKeys: ['f1', 'f2', 'f3'],
     },
     {
-        name: 'Pro',
-        members: '20 membres',
+        key: 'pro',
         price: '790',
         period: '€/an',
-        originalPrice: '1 188',
-        monthlyEquivalent: '65€/mois',
-        pricePerUser: '3,29€/mois/user',
-        description: 'Économisez 33%',
-        features: [
-            'Décisions illimitées',
-            'Synthèse IA',
-            'Decision Log',
-            'Slack & Notion',
-        ],
-        cta: 'Rejoindre',
+        hasOriginalPrice: true,
+        hasMonthly: true,
+        hasPerUser: true,
         highlighted: true,
         founding: true,
+        isFree: false,
+        featureKeys: ['f1', 'f2', 'f3', 'f4'],
     },
     {
-        name: 'Business',
-        members: '50 membres',
+        key: 'business',
         price: '1 990',
         period: '€/an',
-        originalPrice: '2 988',
-        monthlyEquivalent: '165€/mois',
-        pricePerUser: '3,32€/mois/user',
-        description: 'Économisez 33%',
-        features: [
-            'Tout Pro inclus',
-            'Support prioritaire',
-            'Accès fondateur',
-        ],
-        cta: 'Rejoindre',
+        hasOriginalPrice: true,
+        hasMonthly: true,
+        hasPerUser: true,
         highlighted: false,
         founding: true,
+        isFree: false,
+        featureKeys: ['f1', 'f2', 'f3'],
     },
 ];
 
 export const Pricing = () => {
     const { openBetaModal } = useBetaModal();
+    const { t } = useTranslation();
 
     return (
         <Section id="pricing" className="py-28 sm:py-40 bg-background relative overflow-hidden transition-colors duration-300">
@@ -71,26 +54,22 @@ export const Pricing = () => {
                 <FadeIn className="mb-16 sm:mb-20 text-center">
                     <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/20 mb-6">
                         <Crown className="w-4 h-4 text-amber-500" />
-                        <span className="text-sm font-semibold text-amber-500">FOUNDING MEMBER</span>
+                        <span className="text-sm font-semibold text-amber-500">{t('landing.pricing.badge')}</span>
                     </div>
                     <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-primary leading-[0.95] tracking-tight mb-4">
-                        75 places
+                        {t('landing.pricing.title1')}
                         <br />
-                        <span className="text-tertiary">Prix garanti à vie.</span>
+                        <span className="text-tertiary">{t('landing.pricing.title2')}</span>
                     </h2>
                     <p className="text-lg text-secondary max-w-xl mx-auto">
-                        Slack <span className="text-primary font-medium">7€/user</span>, 
-                        Notion <span className="text-primary font-medium">8€/user</span>, 
-                        Monday <span className="text-primary font-medium">9€/user</span>...
-                        <br className="sm:hidden" />
-                        {' '}<span className="text-emerald-500 font-semibold">Verdikt à 3,30€.</span>
+                        {t('landing.pricing.subtitle')}
                     </p>
                 </FadeIn>
 
                 {/* Plans grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6 mb-12">
-                    {plans.map((plan, index) => (
-                        <FadeIn key={plan.name} delay={0.1 * index}>
+                    {plansConfig.map((plan, index) => (
+                        <FadeIn key={plan.key} delay={0.1 * index}>
                             <motion.div
                                 whileHover={{ y: -6 }}
                                 className={`
@@ -112,37 +91,37 @@ export const Pricing = () => {
                                 <div className="mb-6">
                                     <div className="flex items-center justify-between mb-1">
                                         <p className={`text-lg font-bold ${plan.highlighted ? 'text-emerald-500' : 'text-primary'}`}>
-                                            {plan.name}
+                                            {t(`landing.pricing.${plan.key}.name`)}
                                         </p>
                                         <span className="text-xs text-tertiary bg-zinc-100 dark:bg-white/5 px-2 py-1 rounded-full">
-                                            {plan.members}
+                                            {t(`landing.pricing.${plan.key}.members`)}
                                         </span>
                                     </div>
                                     
                                     {/* Price */}
                                     <div className="mt-4">
-                                        {plan.originalPrice && (
+                                        {plan.hasOriginalPrice && (
                                             <p className="text-sm text-tertiary line-through mb-1">
-                                                {plan.originalPrice}€/an
+                                                {t(`landing.pricing.${plan.key}.originalPrice`)}
                                             </p>
                                         )}
                                         <div className="flex items-baseline gap-1">
                                             <span className="text-4xl sm:text-5xl font-bold text-primary">{plan.price}</span>
                                             <span className="text-base text-tertiary">{plan.period}</span>
                                         </div>
-                                        {plan.monthlyEquivalent && (
+                                        {plan.hasMonthly && (
                                             <p className="text-sm text-secondary mt-1">
-                                                soit {plan.monthlyEquivalent}
+                                                {t(`landing.pricing.${plan.key}.monthly`)}
                                             </p>
                                         )}
-                                        {plan.pricePerUser && (
+                                        {plan.hasPerUser && (
                                             <p className="text-xs text-emerald-500 font-medium mt-1">
-                                                → {plan.pricePerUser}
+                                                {t(`landing.pricing.${plan.key}.perUser`)}
                                             </p>
                                         )}
-                                        {!plan.monthlyEquivalent && plan.price === '0' && (
+                                        {plan.isFree && (
                                             <p className="text-sm text-secondary mt-1">
-                                                Pour toujours
+                                                {t('landing.pricing.free.forever')}
                                             </p>
                                         )}
                                     </div>
@@ -150,23 +129,23 @@ export const Pricing = () => {
 
                                 {/* Features */}
                                 <ul className="space-y-3 mb-8">
-                                    {plan.features.map((feature) => (
-                                        <li key={feature} className="flex items-center gap-2.5">
+                                    {plan.featureKeys.map((fk) => (
+                                        <li key={fk} className="flex items-center gap-2.5">
                                             <Check className={`w-4 h-4 flex-shrink-0 ${plan.highlighted ? 'text-emerald-500' : 'text-emerald-500/60'}`} />
-                                            <span className="text-sm text-secondary">{feature}</span>
+                                            <span className="text-sm text-secondary">{t(`landing.pricing.${plan.key}.${fk}`)}</span>
                                         </li>
                                     ))}
                                 </ul>
 
                                 {/* CTA */}
-                                {plan.name === 'Free' ? (
+                                {plan.isFree ? (
                                     <div className="w-full py-3.5 rounded-xl font-medium text-sm bg-zinc-100 dark:bg-white/5 text-tertiary border border-zinc-200 dark:border-white/10 flex items-center justify-center gap-2 cursor-not-allowed">
                                         <Clock className="w-4 h-4" />
-                                        Bientôt accessible
+                                        {t('landing.pricing.free.cta')}
                                     </div>
                                 ) : (
                                     <motion.button
-                                        onClick={() => openBetaModal(plan.name as SelectedPlan)}
+                                        onClick={() => openBetaModal(t(`landing.pricing.${plan.key}.name`) as SelectedPlan)}
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
                                         className={`
@@ -177,7 +156,7 @@ export const Pricing = () => {
                                             }
                                         `}
                                     >
-                                        {plan.cta}
+                                        {t(`landing.pricing.${plan.key}.cta`)}
                                         <ArrowRight className="w-4 h-4" />
                                     </motion.button>
                                 )}
@@ -191,15 +170,15 @@ export const Pricing = () => {
                     <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-secondary mb-8">
                         <span className="flex items-center gap-2">
                             <Check className="w-4 h-4 text-emerald-500" />
-                            Paiement annuel uniquement
+                            {t('landing.pricing.g1')}
                         </span>
                         <span className="flex items-center gap-2">
                             <Check className="w-4 h-4 text-emerald-500" />
-                            Prix garanti à vie
+                            {t('landing.pricing.g2')}
                         </span>
                         <span className="flex items-center gap-2">
                             <Check className="w-4 h-4 text-emerald-500" />
-                            Accès direct au fondateur
+                            {t('landing.pricing.g3')}
                         </span>
                     </div>
                 </FadeIn>
@@ -211,13 +190,11 @@ export const Pricing = () => {
                             <div className="flex items-center gap-2 text-sm">
                                 <Clock className="w-4 h-4 text-amber-500" />
                                 <span className="text-secondary">
-                                    Après la beta :{' '}
-                                    <span className="text-primary font-medium">99€/mois</span> (Pro) et{' '}
-                                    <span className="text-primary font-medium">249€/mois</span> (Business)
+                                    {t('landing.pricing.postBeta')}
                                 </span>
                             </div>
                             <p className="text-xs text-emerald-500 font-medium">
-                                Votre prix Founding Member est garanti à vie ✓
+                                {t('landing.pricing.postBetaNote')}
                             </p>
                         </div>
                     </div>

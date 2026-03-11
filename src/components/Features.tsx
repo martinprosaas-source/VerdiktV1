@@ -1,9 +1,12 @@
+import { useTranslation } from 'react-i18next';
 import { Section, FadeIn } from './ui/Section';
 import { GitPullRequest, Clock, Zap, ScrollText, Puzzle, Shield } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { SlackLogo, NotionLogo, GoogleCalendarLogo } from './icons/IntegrationLogos';
 
 export const Features = () => {
+    const { t } = useTranslation();
+
     return (
         <Section id="features" className="py-28 sm:py-40 bg-card/50 dark:bg-[#0a0a0a] relative overflow-hidden transition-colors duration-300">
             {/* Background grid */}
@@ -12,11 +15,11 @@ export const Features = () => {
             <div className="max-w-6xl mx-auto px-4 sm:px-6 relative">
                 {/* Header */}
                 <FadeIn className="mb-16 sm:mb-20">
-                    <p className="text-emerald-500 font-mono text-sm tracking-wider mb-4">// FONCTIONNALITÉS</p>
+                    <p className="text-emerald-500 font-mono text-sm tracking-wider mb-4">{t('landing.features.label')}</p>
                     <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-primary leading-[0.95] tracking-tight max-w-3xl">
-                        Tout pour décider
+                        {t('landing.features.title1')}
                         <br />
-                        <span className="text-tertiary">vite et bien.</span>
+                        <span className="text-tertiary">{t('landing.features.title2')}</span>
                     </h2>
                 </FadeIn>
 
@@ -34,10 +37,10 @@ export const Features = () => {
                                     <GitPullRequest className="w-6 h-6 text-emerald-500" />
                                 </div>
                                 <h3 className="text-2xl sm:text-3xl font-bold text-primary mb-3">
-                                    Structuration <span className="text-emerald-500">intelligente</span>
+                                    {t('landing.features.card1.title1')} <span className="text-emerald-500">{t('landing.features.card1.title2')}</span>
                                 </h3>
                                 <p className="text-base text-secondary leading-relaxed mb-6 max-w-lg">
-                                    Verdikt transforme vos questions floues en décisions structurées. Contexte, options, critères. Tout est clarifié avant de commencer.
+                                    {t('landing.features.card1.desc')}
                                 </p>
                                 
                                 {/* Terminal mockup */}
@@ -49,12 +52,12 @@ export const Features = () => {
                                             <div className="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-green-500/70" />
                                         </div>
                                         <div className="space-y-1 sm:space-y-1.5 text-[10px] sm:text-xs font-mono overflow-x-auto">
-                                            <p className="text-zinc-500">// Question</p>
-                                            <p className="text-white">"On augmente les prix ?"</p>
-                                            <p className="text-zinc-500 mt-2">// Structuration IA</p>
-                                            <p className="text-emerald-400">→ Contexte: inflation +12%</p>
-                                            <p className="text-emerald-400">→ Options: +10%, +15%, +20%</p>
-                                            <p className="text-emerald-400">→ Critères: marge, churn</p>
+                                            <p className="text-zinc-500">{t('landing.features.card1.terminal.contextLabel')}</p>
+                                            <p className="text-white">{t('landing.features.card1.terminal.question')}</p>
+                                            <p className="text-zinc-500 mt-2">{t('landing.features.card1.terminal.structLabel')}</p>
+                                            <p className="text-emerald-400">{t('landing.features.card1.terminal.line1')}</p>
+                                            <p className="text-emerald-400">{t('landing.features.card1.terminal.line2')}</p>
+                                            <p className="text-emerald-400">{t('landing.features.card1.terminal.line3')}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -71,9 +74,9 @@ export const Features = () => {
                             className="group h-full p-6 rounded-2xl bg-card border border-zinc-200 dark:border-white/5 hover:border-emerald-500/30 transition-all duration-300"
                         >
                             <Clock className="w-8 h-8 text-emerald-500 mb-4" />
-                            <h3 className="text-lg font-bold text-primary mb-2">Vote asynchrone</h3>
+                            <h3 className="text-lg font-bold text-primary mb-2">{t('landing.features.card2.title')}</h3>
                             <p className="text-sm text-secondary leading-relaxed">
-                                Chacun vote quand il peut. Fini les Doodle interminables.
+                                {t('landing.features.card2.desc')}
                             </p>
                         </motion.div>
                     </FadeIn>
@@ -85,9 +88,9 @@ export const Features = () => {
                             className="group h-full p-6 rounded-2xl bg-card border border-zinc-200 dark:border-white/5 hover:border-emerald-500/30 transition-all duration-300"
                         >
                             <Zap className="w-8 h-8 text-emerald-500 mb-4" />
-                            <h3 className="text-lg font-bold text-primary mb-2">Synthèse temps réel</h3>
+                            <h3 className="text-lg font-bold text-primary mb-2">{t('landing.features.card3.title')}</h3>
                             <p className="text-sm text-secondary leading-relaxed">
-                                Consensus et frictions identifiés. Recommandation automatique.
+                                {t('landing.features.card3.desc')}
                             </p>
                         </motion.div>
                     </FadeIn>
@@ -103,9 +106,9 @@ export const Features = () => {
                                     <ScrollText className="w-6 h-6 text-emerald-500" />
                                 </div>
                                 <div>
-                                    <h3 className="text-lg font-bold text-primary mb-2">Decision Log</h3>
+                                    <h3 className="text-lg font-bold text-primary mb-2">{t('landing.features.card4.title')}</h3>
                                     <p className="text-sm text-secondary leading-relaxed">
-                                        Dans 6 mois, vous saurez pourquoi cette décision a été prise et qui l'a validée. Terminé le "on avait décidé quoi ?"
+                                        {t('landing.features.card4.desc')}
                                     </p>
                                 </div>
                             </div>
@@ -121,9 +124,9 @@ export const Features = () => {
                             <div className="flex items-start justify-between gap-4">
                                 <div className="flex-1">
                                     <Puzzle className="w-8 h-8 text-emerald-500 mb-4" />
-                                    <h3 className="text-lg font-bold text-primary mb-2">Intégrations natives</h3>
+                                    <h3 className="text-lg font-bold text-primary mb-2">{t('landing.features.card5.title')}</h3>
                                     <p className="text-sm text-secondary leading-relaxed">
-                                        Slack, Notion, Google Calendar. Là où vous êtes déjà.
+                                        {t('landing.features.card5.desc')}
                                     </p>
                                 </div>
                                 <div className="flex flex-col items-center gap-2">
@@ -155,9 +158,9 @@ export const Features = () => {
                                         <Shield className="w-5 h-5 text-emerald-500" />
                                     </div>
                                     <div>
-                                        <h3 className="text-base font-bold text-primary">Sécurité & Conformité</h3>
+                                        <h3 className="text-base font-bold text-primary">{t('landing.features.card6.title')}</h3>
                                         <p className="text-sm text-secondary">
-                                            Hébergement EU • Chiffrement • RGPD compliant
+                                            {t('landing.features.card6.desc')}
                                         </p>
                                     </div>
                                 </div>

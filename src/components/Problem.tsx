@@ -1,28 +1,16 @@
+import { useTranslation } from 'react-i18next';
 import { Section, FadeIn } from './ui/Section';
 import { motion } from 'framer-motion';
 
-const stats = [
-    {
-        number: '71',
-        suffix: '%',
-        label: 'des réunions',
-        description: 'Sont considérées comme improductives.',
-    },
-    {
-        number: '58',
-        suffix: '%',
-        label: 'du temps',
-        description: 'De décision est utilisé inefficacement.',
-    },
-    {
-        number: '5',
-        suffix: '%',
-        label: 'de votre CA',
-        description: 'Perdu à cause de décisions trop lentes.',
-    },
+const statsConfig = [
+    { number: '71', suffix: '%', labelKey: 'landing.problem.stat1.label', descKey: 'landing.problem.stat1.desc' },
+    { number: '58', suffix: '%', labelKey: 'landing.problem.stat2.label', descKey: 'landing.problem.stat2.desc' },
+    { number: '5', suffix: '%', labelKey: 'landing.problem.stat3.label', descKey: 'landing.problem.stat3.desc' },
 ];
 
 export const Problem = () => {
+    const { t } = useTranslation();
+
     return (
         <Section className="py-28 sm:py-40 bg-background relative overflow-hidden transition-colors duration-300">
             {/* Background accent */}
@@ -31,17 +19,17 @@ export const Problem = () => {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 relative">
                 {/* Header */}
                 <FadeIn className="mb-20 sm:mb-28">
-                    <p className="text-red-500 font-mono text-sm tracking-wider mb-4">// LE PROBLÈME</p>
+                    <p className="text-red-500 font-mono text-sm tracking-wider mb-4">{t('landing.problem.label')}</p>
                     <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-primary leading-[0.9] tracking-tight max-w-4xl">
-                        Plus vous grandissez,
+                        {t('landing.problem.title1')}
                         <br />
-                        <span className="text-tertiary">plus vous ralentissez.</span>
+                        <span className="text-tertiary">{t('landing.problem.title2')}</span>
                     </h2>
                 </FadeIn>
 
                 {/* Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-4">
-                    {stats.map((stat, index) => (
+                    {statsConfig.map((stat, index) => (
                         <FadeIn key={stat.number} delay={0.1 * index}>
                             <motion.div
                                 whileHover={{ y: -4 }}
@@ -63,12 +51,12 @@ export const Problem = () => {
 
                                     {/* Label */}
                                     <p className="text-sm font-medium text-red-500 uppercase tracking-wide mb-3">
-                                        {stat.label}
+                                        {t(stat.labelKey)}
                                     </p>
 
                                     {/* Description */}
                                     <p className="text-base sm:text-lg text-secondary leading-relaxed">
-                                        {stat.description}
+                                        {t(stat.descKey)}
                                     </p>
 
                                     {/* Hover accent */}
@@ -83,7 +71,7 @@ export const Problem = () => {
                 <FadeIn delay={0.4}>
                     <div className="mt-12 sm:mt-16 text-center">
                         <p className="text-xs sm:text-sm text-tertiary">
-                            Sources : Harvard Business Review, McKinsey, West Monroe (2026).
+                            {t('landing.problem.source')}
                         </p>
                     </div>
                 </FadeIn>

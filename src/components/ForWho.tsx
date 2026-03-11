@@ -1,45 +1,28 @@
+import { useTranslation } from 'react-i18next';
 import { Section, FadeIn } from './ui/Section';
 import { motion } from 'framer-motion';
 
-const painPoints = [
-    {
-        number: '01',
-        text: 'Vos décisions prennent des semaines au lieu de jours',
-    },
-    {
-        number: '02',
-        text: 'Vos réunions finissent par "on en reparle"',
-    },
-    {
-        number: '03',
-        text: 'Personne ne sait qui a décidé quoi (et pourquoi)',
-    },
-    {
-        number: '04',
-        text: 'Les mêmes débats reviennent tous les 6 mois',
-    },
-    {
-        number: '05',
-        text: 'Les voix fortes dominent, les autres se taisent',
-    },
-];
+const painKeys = ['pain1', 'pain2', 'pain3', 'pain4', 'pain5'];
+const painNumbers = ['01', '02', '03', '04', '05'];
 
 export const ForWho = () => {
+    const { t } = useTranslation();
+
     return (
         <Section className="py-32 sm:py-44 bg-background relative overflow-hidden transition-colors duration-300">
             <div className="max-w-6xl mx-auto px-4 sm:px-6">
                 {/* Header - minimal */}
                 <FadeIn className="mb-16 sm:mb-24">
-                    <p className="text-emerald-500 font-mono text-sm tracking-wider mb-4 uppercase">Pour qui</p>
+                    <p className="text-emerald-500 font-mono text-sm tracking-wider mb-4 uppercase">{t('landing.forWho.label')}</p>
                     <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-primary leading-[1.1] tracking-tight">
-                        Verdikt est fait pour vous si...
+                        {t('landing.forWho.title')}
                     </h2>
                 </FadeIn>
 
                 {/* Pain points - clean list */}
                 <div className="space-y-0">
-                    {painPoints.map((point, index) => (
-                        <FadeIn key={point.number} delay={0.1 + index * 0.08}>
+                    {painKeys.map((key, index) => (
+                        <FadeIn key={key} delay={0.1 + index * 0.08}>
                             <motion.div
                                 whileHover={{ x: 8 }}
                                 transition={{ type: 'spring', stiffness: 400, damping: 25 }}
@@ -48,8 +31,8 @@ export const ForWho = () => {
                                 <div className="flex items-start gap-4 sm:gap-6 md:gap-8">
                                     {/* Number */}
                                     <span className="text-3xl sm:text-4xl md:text-5xl font-bold text-zinc-200 dark:text-white/5 group-hover:text-emerald-500/30 transition-colors duration-300 flex-shrink-0">
-                                        {point.number}
-                                        </span>
+                                        {painNumbers[index]}
+                                    </span>
 
                                     {/* Arrow + Text */}
                                     <div className="flex items-center gap-3 sm:gap-4 pt-1 sm:pt-2">
@@ -57,7 +40,7 @@ export const ForWho = () => {
                                             →
                                         </span>
                                         <p className="text-lg sm:text-xl md:text-2xl text-secondary group-hover:text-primary transition-colors duration-300 leading-snug">
-                                            {point.text}
+                                            {t(`landing.forWho.${key}`)}
                                         </p>
                                     </div>
                                 </div>

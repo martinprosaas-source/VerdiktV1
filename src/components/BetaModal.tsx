@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, CheckCircle2, Loader2, ChevronDown, Mail, MessageCircle, Copy, Check, Gift } from 'lucide-react';
 import { Button } from './ui/Button';
@@ -56,6 +57,7 @@ const Confetti = () => {
 };
 
 export const BetaModal = ({ isOpen, onClose, selectedPlan }: BetaModalProps) => {
+    const { t } = useTranslation();
     const [firstName, setFirstName] = useState('');
     const [email, setEmail] = useState('');
     const [company, setCompany] = useState('');
@@ -84,7 +86,7 @@ export const BetaModal = ({ isOpen, onClose, selectedPlan }: BetaModalProps) => 
     };
 
     const shareOnTwitter = () => {
-        const text = encodeURIComponent("Je viens de rejoindre la waitlist Verdikt — l'IA qui transforme les réunions interminables en décisions claires. 🚀\n\nRejoins aussi :");
+        const text = encodeURIComponent(t('landing.betaModal.tweetText'));
         const url = encodeURIComponent(referralLink);
         window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
     };
@@ -130,27 +132,27 @@ export const BetaModal = ({ isOpen, onClose, selectedPlan }: BetaModalProps) => 
         setError('');
 
         if (!firstName.trim()) {
-            setError('Prénom requis');
+            setError(t('landing.betaModal.errors.firstName'));
             return;
         }
         if (!email || !email.includes('@')) {
-            setError('Email professionnel invalide');
+            setError(t('landing.betaModal.errors.email'));
             return;
         }
         if (!company.trim()) {
-            setError('Entreprise requise');
+            setError(t('landing.betaModal.errors.company'));
             return;
         }
         if (!teamSize) {
-            setError('Taille d\'équipe requise');
+            setError(t('landing.betaModal.errors.teamSize'));
             return;
         }
         if (!plan) {
-            setError('Plan requis');
+            setError(t('landing.betaModal.errors.plan'));
             return;
         }
         if (contactPreference === 'whatsapp' && !phone.trim()) {
-            setError('Numéro WhatsApp requis');
+            setError(t('landing.betaModal.errors.whatsapp'));
             return;
         }
 
@@ -171,7 +173,7 @@ export const BetaModal = ({ isOpen, onClose, selectedPlan }: BetaModalProps) => 
 
             if (error) {
                 if (error.code === '23505') {
-                    setError('Cet email est déjà inscrit sur la waitlist.');
+                    setError(t('landing.betaModal.errors.duplicate'));
                 } else {
                     throw error;
                 }
@@ -192,12 +194,11 @@ export const BetaModal = ({ isOpen, onClose, selectedPlan }: BetaModalProps) => 
             }).catch(() => {});
 
             setIsSuccess(true);
-        } catch (err: any) {
-            setError('Une erreur est survenue. Veuillez réessayer.');
+        } catch (err: unknown) {
+            setError(t('landing.betaModal.errors.generic'));
         } finally {
             setIsLoading(false);
         }
-        // No auto-close - let user share or close manually
     };
 
     return (
@@ -266,10 +267,10 @@ export const BetaModal = ({ isOpen, onClose, selectedPlan }: BetaModalProps) => 
                                                 <LogoIcon size="lg" />
                                             </motion.div>
                                             <h3 className="text-xl font-bold text-primary mb-1">
-                                                Rejoindre la Waitlist
+                                                {t('landing.betaModal.title')}
                                             </h3>
                                             <p className="text-secondary text-sm">
-                                                75 places Founding Member • Prix garanti à vie
+                                                {t('landing.betaModal.subtitle')}
                                             </p>
                                         </div>
 
@@ -279,28 +280,28 @@ export const BetaModal = ({ isOpen, onClose, selectedPlan }: BetaModalProps) => 
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div>
                                                     <label htmlFor="firstName" className="block text-xs font-medium text-secondary mb-1.5">
-                                                        Prénom <span className="text-emerald-400">*</span>
+                                                        {t('landing.betaModal.firstName')} <span className="text-emerald-400">*</span>
                                                     </label>
                                                     <input
                                                         type="text"
                                                         id="firstName"
                                                         value={firstName}
                                                         onChange={(e) => setFirstName(e.target.value)}
-                                                        placeholder="Jean"
+                                                        placeholder={t('landing.betaModal.placeholders.firstName')}
                                                         className="w-full px-3 py-2.5 bg-background border border-border-subtle/30 rounded-lg text-sm text-primary placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all"
                                                         autoFocus
                                                     />
                                                 </div>
                                                 <div>
                                                     <label htmlFor="email" className="block text-xs font-medium text-secondary mb-1.5">
-                                                        Email pro <span className="text-emerald-400">*</span>
+                                                        {t('landing.betaModal.email')} <span className="text-emerald-400">*</span>
                                                     </label>
                                                     <input
                                                         type="email"
                                                         id="email"
                                                         value={email}
                                                         onChange={(e) => setEmail(e.target.value)}
-                                                        placeholder="vous@entreprise.com"
+                                                        placeholder={t('landing.betaModal.placeholders.email')}
                                                         className="w-full px-3 py-2.5 bg-background border border-border-subtle/30 rounded-lg text-sm text-primary placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all"
                                                     />
                                                 </div>
@@ -310,27 +311,27 @@ export const BetaModal = ({ isOpen, onClose, selectedPlan }: BetaModalProps) => 
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div>
                                                     <label htmlFor="company" className="block text-xs font-medium text-secondary mb-1.5">
-                                                        Entreprise <span className="text-emerald-400">*</span>
+                                                        {t('landing.betaModal.company')} <span className="text-emerald-400">*</span>
                                                     </label>
                                                     <input
                                                         type="text"
                                                         id="company"
                                                         value={company}
                                                         onChange={(e) => setCompany(e.target.value)}
-                                                        placeholder="Acme Inc."
+                                                        placeholder={t('landing.betaModal.placeholders.company')}
                                                         className="w-full px-3 py-2.5 bg-background border border-border-subtle/30 rounded-lg text-sm text-primary placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all"
                                                     />
                                                 </div>
                                                 <div>
                                                     <label htmlFor="website" className="block text-xs font-medium text-secondary mb-1.5">
-                                                        Site web <span className="text-tertiary font-normal">(optionnel)</span>
+                                                        {t('landing.betaModal.website')} <span className="text-tertiary font-normal">({t('common.optional')})</span>
                                                     </label>
                                                     <input
                                                         type="url"
                                                         id="website"
                                                         value={website}
                                                         onChange={(e) => setWebsite(e.target.value)}
-                                                        placeholder="https://..."
+                                                        placeholder={t('landing.betaModal.placeholders.website')}
                                                         className="w-full px-3 py-2.5 bg-background border border-border-subtle/30 rounded-lg text-sm text-primary placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all"
                                                     />
                                                 </div>
@@ -340,7 +341,7 @@ export const BetaModal = ({ isOpen, onClose, selectedPlan }: BetaModalProps) => 
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div>
                                                     <label htmlFor="teamSize" className="block text-xs font-medium text-secondary mb-1.5">
-                                                        Taille équipe <span className="text-emerald-400">*</span>
+                                                        {t('landing.betaModal.teamSize')} <span className="text-emerald-400">*</span>
                                                     </label>
                                                     <div className="relative">
                                                         <select
@@ -349,18 +350,18 @@ export const BetaModal = ({ isOpen, onClose, selectedPlan }: BetaModalProps) => 
                                                             onChange={(e) => setTeamSize(e.target.value)}
                                                             className="w-full px-3 py-2.5 bg-background border border-border-subtle/30 rounded-lg text-sm text-primary focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all appearance-none cursor-pointer"
                                                         >
-                                                            <option value="" disabled>Sélectionner</option>
-                                                            <option value="5-15">5-15 personnes</option>
-                                                            <option value="15-30">15-30 personnes</option>
-                                                            <option value="30-50">30-50 personnes</option>
-                                                            <option value="50+">50+ personnes</option>
+                                                            <option value="" disabled>{t('landing.betaModal.placeholders.select')}</option>
+                                                            <option value="5-15">{t('landing.betaModal.sizes.s1')}</option>
+                                                            <option value="15-30">{t('landing.betaModal.sizes.s2')}</option>
+                                                            <option value="30-50">{t('landing.betaModal.sizes.s3')}</option>
+                                                            <option value="50+">{t('landing.betaModal.sizes.s4')}</option>
                                                         </select>
                                                         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tertiary pointer-events-none" />
                                                     </div>
                                                 </div>
                                                 <div>
                                                     <label htmlFor="plan" className="block text-xs font-medium text-secondary mb-1.5">
-                                                        Plan intéressé <span className="text-emerald-400">*</span>
+                                                        {t('landing.betaModal.plan')} <span className="text-emerald-400">*</span>
                                                     </label>
                                                     <div className="relative">
                                                         <select
@@ -369,9 +370,9 @@ export const BetaModal = ({ isOpen, onClose, selectedPlan }: BetaModalProps) => 
                                                             onChange={(e) => setPlan(e.target.value)}
                                                             className="w-full px-3 py-2.5 bg-background border border-border-subtle/30 rounded-lg text-sm text-primary focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all appearance-none cursor-pointer"
                                                         >
-                                                            <option value="" disabled>Sélectionner</option>
-                                                            <option value="Pro">Pro (20 membres)</option>
-                                                            <option value="Business">Business (50 membres)</option>
+                                                            <option value="" disabled>{t('landing.betaModal.placeholders.select')}</option>
+                                                            <option value="Pro">{t('landing.betaModal.plans.pro')}</option>
+                                                            <option value="Business">{t('landing.betaModal.plans.business')}</option>
                                                         </select>
                                                         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tertiary pointer-events-none" />
                                                     </div>
@@ -381,7 +382,7 @@ export const BetaModal = ({ isOpen, onClose, selectedPlan }: BetaModalProps) => 
                                             {/* Row 4: Contact preference */}
                                             <div>
                                                 <label className="block text-xs font-medium text-secondary mb-1.5">
-                                                    Comment souhaitez-vous être contacté ? <span className="text-emerald-400">*</span>
+                                                    {t('landing.betaModal.contactMethod')} <span className="text-emerald-400">*</span>
                                                 </label>
                                                 <div className="grid grid-cols-2 gap-3">
                                                     <button
@@ -394,7 +395,7 @@ export const BetaModal = ({ isOpen, onClose, selectedPlan }: BetaModalProps) => 
                                                         }`}
                                                     >
                                                         <Mail className="w-4 h-4" />
-                                                        Email
+                                                        {t('landing.betaModal.contactMethods.email')}
                                                     </button>
                                                     <button
                                                         type="button"
@@ -406,7 +407,7 @@ export const BetaModal = ({ isOpen, onClose, selectedPlan }: BetaModalProps) => 
                                                         }`}
                                                     >
                                                         <MessageCircle className="w-4 h-4" />
-                                                        WhatsApp
+                                                        {t('landing.betaModal.contactMethods.whatsapp')}
                                                     </button>
                                                 </div>
                                             </div>
@@ -421,14 +422,14 @@ export const BetaModal = ({ isOpen, onClose, selectedPlan }: BetaModalProps) => 
                                                         transition={{ duration: 0.2 }}
                                                     >
                                                         <label htmlFor="phone" className="block text-xs font-medium text-secondary mb-1.5">
-                                                            Numéro WhatsApp <span className="text-emerald-400">*</span>
+                                                            {t('landing.betaModal.whatsapp')} <span className="text-emerald-400">*</span>
                                                         </label>
                                                         <input
                                                             type="tel"
                                                             id="phone"
                                                             value={phone}
                                                             onChange={(e) => setPhone(e.target.value)}
-                                                            placeholder="+33 6 12 34 56 78"
+                                                            placeholder={t('landing.betaModal.placeholders.whatsapp')}
                                                             className="w-full px-3 py-2.5 bg-background border border-border-subtle/30 rounded-lg text-sm text-primary placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all"
                                                         />
                                                     </motion.div>
@@ -454,16 +455,16 @@ export const BetaModal = ({ isOpen, onClose, selectedPlan }: BetaModalProps) => 
                                                 {isLoading ? (
                                                     <span className="flex items-center gap-2">
                                                         <Loader2 className="w-4 h-4 animate-spin" />
-                                                        Inscription...
+                                                        {t('landing.betaModal.submitting')}
                                                     </span>
                                                 ) : (
-                                                    "Rejoindre la waitlist →"
+                                                    t('landing.betaModal.submit')
                                                 )}
                                             </Button>
                                         </form>
 
                                         <p className="text-xs text-tertiary text-center mt-3">
-                                            Pas de spam. On vous contacte sous 24h.
+                                            {t('landing.betaModal.noSpam')}
                                         </p>
                                     </motion.div>
                                 ) : (
@@ -495,7 +496,7 @@ export const BetaModal = ({ isOpen, onClose, selectedPlan }: BetaModalProps) => 
                                             transition={{ delay: 0.2 }}
                                             className="text-xl font-bold text-primary mb-1"
                                         >
-                                            Vous êtes sur la liste ! 🎉
+                                            {t('landing.betaModal.successTitle')}
                                         </motion.h3>
 
                                         {/* Subtitle */}
@@ -505,7 +506,7 @@ export const BetaModal = ({ isOpen, onClose, selectedPlan }: BetaModalProps) => 
                                             transition={{ delay: 0.3 }}
                                             className="text-secondary text-sm mb-4"
                                         >
-                                            Votre place Founding Member est réservée.
+                                            {t('landing.betaModal.successSubtitle')}
                                         </motion.p>
                                         
                                         {/* Contact info card */}
@@ -522,14 +523,16 @@ export const BetaModal = ({ isOpen, onClose, selectedPlan }: BetaModalProps) => 
                                                     <MessageCircle className="w-4 h-4 text-emerald-400" />
                                                 )}
                                                 <span>
-                                                    On vous contacte sous 24h via{' '}
+                                                    {t('landing.betaModal.contactedVia')}{' '}
                                                     <span className="text-emerald-400 font-medium">
-                                                        {contactPreference === 'email' ? 'email' : 'WhatsApp'}
+                                                        {contactPreference === 'email'
+                                                            ? t('landing.betaModal.contactMethods.email')
+                                                            : t('landing.betaModal.contactMethods.whatsapp')}
                                                     </span>
                                                 </span>
                                             </div>
                                             <p className="text-xs text-tertiary mt-1">
-                                                Prix garanti à vie • {plan === 'Pro' ? '790€/an' : '1 990€/an'}
+                                                {t('landing.pricing.g2')} • {plan === 'Pro' ? '790€/an' : '1 990€/an'}
                                             </p>
                                         </motion.div>
 
@@ -542,10 +545,10 @@ export const BetaModal = ({ isOpen, onClose, selectedPlan }: BetaModalProps) => 
                                         >
                                             <div className="flex items-center justify-center gap-2 mb-3">
                                                 <Gift className="w-4 h-4 text-amber-400" />
-                                                <span className="text-sm font-medium text-primary">Passez devant dans la file</span>
+                                                <span className="text-sm font-medium text-primary">{t('landing.betaModal.referral.title')}</span>
                                             </div>
                                             <p className="text-xs text-secondary mb-4">
-                                                Partagez Verdikt et gagnez <span className="text-amber-400 font-medium">1 mois offert</span> pour chaque inscription.
+                                                {t('landing.betaModal.referral.desc')} <span className="text-amber-400 font-medium">{t('landing.betaModal.referral.reward')}</span> {t('landing.betaModal.referral.rewardSuffix')}
                                             </p>
 
                                             {/* Copy link button */}
@@ -560,12 +563,12 @@ export const BetaModal = ({ isOpen, onClose, selectedPlan }: BetaModalProps) => 
                                                 {copied ? (
                                                     <>
                                                         <Check className="w-4 h-4" />
-                                                        Lien copié !
+                                                        {t('landing.betaModal.referral.copied')}
                                                     </>
                                                 ) : (
                                                     <>
                                                         <Copy className="w-4 h-4" />
-                                                        Copier mon lien de parrainage
+                                                        {t('landing.betaModal.referral.copy')}
                                                     </>
                                                 )}
                                             </button>
