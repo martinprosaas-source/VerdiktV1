@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Save, Shield, Info, Plug, CheckCircle2, Clock, Loader2, Unplug, LogOut } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Save, Shield, Info, Plug, CheckCircle2, Clock, Loader2, Unplug, LogOut, Send, X } from 'lucide-react';
 import { Avatar } from '../../components/app/feedback/Avatar';
 import { useAuth, useTeam, useIntegrations } from '../../hooks';
 import { SlackLogo, NotionLogo, GoogleCalendarLogo } from '../../components/icons/IntegrationLogos';
@@ -62,6 +62,81 @@ const integrationDefs = [
         ],
     },
 ];
+
+const SuggestIntegrationCard = () => {
+    const [open, setOpen] = useState(false);
+    const [tool, setTool] = useState('');
+    const [sent, setSent] = useState(false);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    const handleOpen = () => {
+        setOpen(true);
+        setSent(false);
+        setTool('');
+        setTimeout(() => inputRef.current?.focus(), 50);
+    };
+
+    const handleSend = () => {
+        if (!tool.trim()) return;
+        const subject = encodeURIComponent(`Suggestion d'intégration : ${tool.trim()}`);
+        const body = encodeURIComponent(`Bonjour,\n\nJe souhaiterais connecter ${tool.trim()} à Verdikt.\n\nMerci !`);
+        window.open(`mailto:contact@verdikt.dev?subject=${subject}&body=${body}`, '_blank');
+        setSent(true);
+        setOpen(false);
+        setTool('');
+    };
+
+    return (
+        <section className="bg-card border border-dashed border-zinc-300 dark:border-white/10 rounded-xl p-6 text-center">
+            <div className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-white/5 flex items-center justify-center mx-auto mb-3">
+                <Plug className="w-5 h-5 text-tertiary" />
+            </div>
+            <h3 className="text-sm font-medium text-primary mb-1">Une intégration manquante ?</h3>
+            <p className="text-xs text-tertiary mb-4">
+                Dites-nous quels outils vous aimeriez connecter à Verdikt.
+            </p>
+
+            {sent ? (
+                <div className="flex items-center justify-center gap-2 text-emerald-500 text-sm font-medium">
+                    <CheckCircle2 className="w-4 h-4" />
+                    Suggestion envoyée, merci !
+                </div>
+            ) : open ? (
+                <div className="flex items-center gap-2 max-w-xs mx-auto">
+                    <input
+                        ref={inputRef}
+                        type="text"
+                        value={tool}
+                        onChange={e => setTool(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') handleSend(); if (e.key === 'Escape') setOpen(false); }}
+                        placeholder="Ex : Jira, Linear, HubSpot…"
+                        className="flex-1 px-3 py-1.5 text-sm bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-lg text-primary placeholder:text-tertiary focus:outline-none focus:border-emerald-500"
+                    />
+                    <button
+                        onClick={handleSend}
+                        disabled={!tool.trim()}
+                        className="p-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                        <Send className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                        onClick={() => setOpen(false)}
+                        className="p-1.5 text-tertiary hover:text-primary hover:bg-zinc-100 dark:hover:bg-white/5 rounded-lg transition-colors"
+                    >
+                        <X className="w-3.5 h-3.5" />
+                    </button>
+                </div>
+            ) : (
+                <button
+                    onClick={handleOpen}
+                    className="px-4 py-2 bg-zinc-100 dark:bg-white/5 hover:bg-zinc-200 dark:hover:bg-white/10 text-secondary text-sm font-medium rounded-lg transition-colors"
+                >
+                    Suggérer une intégration
+                </button>
+            )}
+        </section>
+    );
+};
 
 export const Settings = () => {
     const [activeTab, setActiveTab] = useState<'profile' | 'workspace' | 'permissions' | 'integrations'>('profile');
@@ -843,18 +918,7 @@ export const Settings = () => {
                     </div>
 
                     {/* Request Integration */}
-                    <section className="bg-card border border-dashed border-zinc-300 dark:border-white/10 rounded-xl p-6 text-center">
-                        <div className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-white/5 flex items-center justify-center mx-auto mb-3">
-                            <Plug className="w-5 h-5 text-tertiary" />
-                        </div>
-                        <h3 className="text-sm font-medium text-primary mb-1">Une intégration manquante ?</h3>
-                        <p className="text-xs text-tertiary mb-4">
-                            Dites-nous quels outils vous aimeriez connecter à Verdikt.
-                        </p>
-                        <button className="px-4 py-2 bg-zinc-100 dark:bg-white/5 hover:bg-zinc-200 dark:hover:bg-white/10 text-secondary text-sm font-medium rounded-lg transition-colors">
-                            Suggérer une intégration
-                        </button>
-                    </section>
+                    <SuggestIntegrationCard />
                 </div>
             )}
 
