@@ -51,8 +51,8 @@ export const Footer = () => {
                         
                         {/* Brand column */}
                         <div className="col-span-2">
-                            <div className="mb-6">
-                                <Logo size="md" linkTo="/" />
+                            <div className="mb-6 flex justify-start">
+                                <Logo size="md" linkTo="/" className="justify-start" />
                             </div>
                             <p className="text-sm text-secondary mb-6 max-w-xs">
                                 {t('landing.footer.tagline')}
