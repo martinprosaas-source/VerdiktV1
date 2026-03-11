@@ -5,25 +5,10 @@ import { useAuth } from '../../hooks';
 
 type Category = 'idea' | 'bug' | 'general';
 
-const categories: { id: Category; label: string; icon: React.ReactNode; color: string }[] = [
-    {
-        id: 'idea',
-        label: 'Idée',
-        icon: <Lightbulb className="w-4 h-4" />,
-        color: 'border-yellow-500/40 bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 data-[active=true]:border-yellow-500 data-[active=true]:bg-yellow-500/20',
-    },
-    {
-        id: 'bug',
-        label: 'Bug',
-        icon: <Bug className="w-4 h-4" />,
-        color: 'border-red-500/40 bg-red-500/10 text-red-600 dark:text-red-400 data-[active=true]:border-red-500 data-[active=true]:bg-red-500/20',
-    },
-    {
-        id: 'general',
-        label: 'Avis',
-        icon: <MessageSquare className="w-4 h-4" />,
-        color: 'border-blue-500/40 bg-blue-500/10 text-blue-600 dark:text-blue-400 data-[active=true]:border-blue-500 data-[active=true]:bg-blue-500/20',
-    },
+const categories: { id: Category; label: string; icon: React.ReactNode }[] = [
+    { id: 'idea', label: 'Idée', icon: <Lightbulb className="w-3.5 h-3.5" /> },
+    { id: 'bug', label: 'Bug', icon: <Bug className="w-3.5 h-3.5" /> },
+    { id: 'general', label: 'Avis', icon: <MessageSquare className="w-3.5 h-3.5" /> },
 ];
 
 interface FeedbackModalProps {
@@ -58,9 +43,9 @@ export const FeedbackModal = ({ onClose }: FeedbackModalProps) => {
 
     return (
         <>
-            {/* Backdrop */}
+            {/* Backdrop — léger */}
             <div
-                className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
+                className="fixed inset-0 z-50"
                 onClick={onClose}
             />
 
@@ -100,13 +85,16 @@ export const FeedbackModal = ({ onClose }: FeedbackModalProps) => {
                     ) : (
                         <>
                             {/* Category selector */}
-                            <div className="flex gap-2 mb-3">
+                            <div className="flex gap-1.5 mb-3">
                                 {categories.map(cat => (
                                     <button
                                         key={cat.id}
-                                        data-active={category === cat.id}
                                         onClick={() => setCategory(cat.id)}
-                                        className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg border text-xs font-medium transition-all ${cat.color}`}
+                                        className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg border text-xs font-medium transition-all ${
+                                            category === cat.id
+                                                ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                                                : 'border-zinc-200 dark:border-white/10 text-secondary hover:text-primary hover:border-zinc-300 dark:hover:border-white/20'
+                                        }`}
                                     >
                                         {cat.icon}
                                         {cat.label}
