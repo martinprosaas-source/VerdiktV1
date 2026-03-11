@@ -168,8 +168,7 @@ export const useDecisions = () => {
                     .from('decisions')
                     .update({ status: 'completed' })
                     .in('id', expiredIds)
-                    .then(() => {})
-                    .catch(() => {});
+                    .then(() => {}, () => {});
 
                 // Update local data immediately so UI reflects correct status
                 expiredIds.forEach(id => {
