@@ -28,11 +28,20 @@ export const Logo = ({
 
     const sizeConfig = sizes[size];
 
+    const iconSrc = theme === 'dark'
+        ? '/signifiant FN verdikt.png'
+        : '/Signifiant FB verdikt.png';
+
     const content = (
         <motion.div 
             whileHover={{ scale: 1.02 }}
-            className={`flex items-center ${className}`}
+            className={`flex items-center gap-2 ${className}`}
         >
+            <img
+                src={iconSrc}
+                alt=""
+                className={`${sizeConfig.icon} object-contain`}
+            />
             <img 
                 src={logoSrc} 
                 alt="Verdikt" 
