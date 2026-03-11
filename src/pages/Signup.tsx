@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Sparkles, Mail, Lock, Eye, EyeOff, Loader2, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { motion } from 'framer-motion';
@@ -15,6 +16,7 @@ const GoogleIcon = () => (
 
 export const Signup = () => {
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -27,12 +29,12 @@ export const Signup = () => {
         setError(null);
 
         if (!email || !password) {
-            setError('Veuillez remplir tous les champs');
+            setError(t('auth.signup.errors.fields'));
             return;
         }
 
         if (password.length < 8) {
-            setError('Le mot de passe doit contenir au moins 8 caractères');
+            setError(t('auth.signup.errors.password'));
             return;
         }
 
@@ -64,7 +66,7 @@ export const Signup = () => {
             }
         } catch (err: any) {
             console.error('Signup error:', err);
-            setError(err.message || 'Erreur lors de l\'inscription');
+            setError(err.message || t('auth.signup.errors.generic'));
         } finally {
             setLoading(false);
         }
@@ -86,7 +88,7 @@ export const Signup = () => {
             if (error) throw error;
         } catch (err: any) {
             console.error('Google signup error:', err);
-            setError(err.message || 'Erreur lors de la connexion Google');
+            setError(err.message || t('auth.signup.errors.google'));
             setGoogleLoading(false);
         }
     };
@@ -112,10 +114,10 @@ export const Signup = () => {
                     {/* Header */}
                     <div className="text-center mb-8">
                         <h1 className="text-2xl font-bold text-primary mb-2">
-                            Créer votre compte
+                            {t('auth.signup.title')}
                         </h1>
                         <p className="text-sm text-tertiary">
-                            Rejoignez la beta de Verdikt
+                            {t('auth.signup.subtitle')}
                         </p>
                     </div>
 
@@ -130,13 +132,13 @@ export const Signup = () => {
                         ) : (
                             <GoogleIcon />
                         )}
-                        Continuer avec Google
+                        {t('auth.signup.googleCta')}
                     </button>
 
                     {/* Divider */}
                     <div className="flex items-center gap-3 my-6">
                         <div className="flex-1 h-px bg-zinc-200 dark:bg-white/10" />
-                        <span className="text-xs text-tertiary">ou</span>
+                        <span className="text-xs text-tertiary">{t('common.or')}</span>
                         <div className="flex-1 h-px bg-zinc-200 dark:bg-white/10" />
                     </div>
 
@@ -145,7 +147,7 @@ export const Signup = () => {
                         {/* Email */}
                         <div>
                             <label className="block text-sm font-medium text-primary mb-2">
-                                Email
+                                {t('auth.signup.email')}
                             </label>
                             <div className="relative">
                                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-tertiary" />
@@ -153,7 +155,7 @@ export const Signup = () => {
                                     type="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="vous@entreprise.com"
+                                    placeholder={t('auth.signup.emailPlaceholder')}
                                     disabled={loading || googleLoading}
                                     className="w-full pl-11 pr-4 py-3 bg-background border border-zinc-200 dark:border-white/10 rounded-xl text-primary placeholder:text-tertiary focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all disabled:opacity-50"
                                 />
@@ -163,7 +165,7 @@ export const Signup = () => {
                         {/* Password */}
                         <div>
                             <label className="block text-sm font-medium text-primary mb-2">
-                                Mot de passe
+                                {t('auth.signup.password')}
                             </label>
                             <div className="relative">
                                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-tertiary" />
@@ -171,7 +173,7 @@ export const Signup = () => {
                                     type={showPassword ? 'text' : 'password'}
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="Minimum 8 caractères"
+                                    placeholder={t('auth.signup.passwordPlaceholder')}
                                     disabled={loading || googleLoading}
                                     className="w-full pl-11 pr-12 py-3 bg-background border border-zinc-200 dark:border-white/10 rounded-xl text-primary placeholder:text-tertiary focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all disabled:opacity-50"
                                 />
@@ -195,7 +197,7 @@ export const Signup = () => {
                                     <p className={`text-xs mt-1 ${
                                         password.length >= 8 ? 'text-emerald-500' : 'text-tertiary'
                                     }`}>
-                                        {password.length >= 8 ? '✓ Mot de passe sécurisé' : `${8 - password.length} caractère${8 - password.length > 1 ? 's' : ''} restant${8 - password.length > 1 ? 's' : ''}`}
+                                        {password.length >= 8 ? t('auth.signup.passwordStrong') : t('auth.signup.passwordRemaining', { count: 8 - password.length })}
                                     </p>
                                 </motion.div>
                             )}
@@ -221,11 +223,11 @@ export const Signup = () => {
                             {loading ? (
                                 <>
                                     <Loader2 className="w-5 h-5 animate-spin" />
-                                    Création du compte...
+                                    {t('auth.signup.submitting')}
                                 </>
                             ) : (
                                 <>
-                                    Créer mon compte
+                                    {t('auth.signup.submit')}
                                     <ArrowRight className="w-5 h-5" />
                                 </>
                             )}
@@ -235,9 +237,9 @@ export const Signup = () => {
                     {/* Footer */}
                     <div className="mt-6 text-center">
                         <p className="text-sm text-tertiary">
-                            Déjà un compte ?{' '}
+                            {t('auth.signup.hasAccount')}{' '}
                             <Link to="/login" className="text-emerald-500 hover:text-emerald-400 font-medium transition-colors">
-                                Se connecter
+                                {t('auth.signup.login')}
                             </Link>
                         </p>
                     </div>

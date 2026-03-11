@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Plus, Users, MoreVertical, X, Check, Loader2 } from 'lucide-react';
 import { Avatar } from '../../components/app/feedback/Avatar';
+import { useTranslation } from 'react-i18next';
 import { usePoles, useTeam, useDelayedLoading, useAuth } from '../../hooks';
 
 const getPoleColor = (hexColor: string) => {
@@ -21,6 +22,7 @@ export const Poles = () => {
     const { poles: polesData, loading, createPole, updatePole, deletePole } = usePoles();
     const { members, updateMember } = useTeam();
     const { canManage } = useAuth();
+    const { t } = useTranslation();
     const showSpinner = useDelayedLoading(loading);
     
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -109,7 +111,7 @@ export const Poles = () => {
     };
 
     const handleDeletePole = async (poleId: string) => {
-        if (!confirm('Êtes-vous sûr de vouloir supprimer ce pôle ?')) return;
+        if (!confirm(t('app.poles.deleteConfirm'))) return;
 
         try {
             // First, remove pole assignment from all members
@@ -134,14 +136,14 @@ export const Poles = () => {
     };
 
     const colorOptions = [
-        { value: '#a855f7', label: 'Violet', colorClass: 'bg-purple-500' },
-        { value: '#ec4899', label: 'Rose', colorClass: 'bg-pink-500' },
-        { value: '#3b82f6', label: 'Bleu', colorClass: 'bg-blue-500' },
-        { value: '#10b981', label: 'Émeraude', colorClass: 'bg-emerald-500' },
-        { value: '#f97316', label: 'Orange', colorClass: 'bg-orange-500' },
-        { value: '#06b6d4', label: 'Cyan', colorClass: 'bg-cyan-500' },
-        { value: '#eab308', label: 'Jaune', colorClass: 'bg-yellow-500' },
-        { value: '#ef4444', label: 'Rouge', colorClass: 'bg-red-500' },
+        { value: '#a855f7', label: t('app.poles.modal.colors.purple'), colorClass: 'bg-purple-500' },
+        { value: '#ec4899', label: t('app.poles.modal.colors.pink'), colorClass: 'bg-pink-500' },
+        { value: '#3b82f6', label: t('app.poles.modal.colors.blue'), colorClass: 'bg-blue-500' },
+        { value: '#10b981', label: t('app.poles.modal.colors.emerald'), colorClass: 'bg-emerald-500' },
+        { value: '#f97316', label: t('app.poles.modal.colors.orange'), colorClass: 'bg-orange-500' },
+        { value: '#06b6d4', label: t('app.poles.modal.colors.cyan'), colorClass: 'bg-cyan-500' },
+        { value: '#eab308', label: t('app.poles.modal.colors.yellow'), colorClass: 'bg-yellow-500' },
+        { value: '#ef4444', label: t('app.poles.modal.colors.red'), colorClass: 'bg-red-500' },
     ];
 
     if (showSpinner) {
@@ -157,9 +159,9 @@ export const Poles = () => {
             {/* Header */}
             <div className="flex items-center justify-between mb-4 sm:mb-6">
                 <div>
-                    <h1 className="text-lg sm:text-xl font-semibold text-primary">Pôles</h1>
+                    <h1 className="text-lg sm:text-xl font-semibold text-primary">{t('app.poles.title')}</h1>
                     <p className="text-sm text-tertiary">
-                        {polesData.length} pôles • {members.length} membres
+                        {t('app.poles.subtitle', { poles: polesData.length, members: members.length })}
                     </p>
                 </div>
                 {canManage && (
@@ -168,7 +170,7 @@ export const Poles = () => {
                         className="inline-flex items-center gap-1.5 px-3 py-2 sm:py-1.5 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-medium rounded-lg transition-colors"
                     >
                         <Plus className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">Nouveau pôle</span>
+                        <span className="hidden sm:inline">{t('app.poles.newPole')}</span>
                     </button>
                 )}
             </div>
@@ -190,7 +192,7 @@ export const Poles = () => {
                                             {pole.name}
                                         </h3>
                                         <span className={`px-2 py-0.5 text-xs font-medium rounded border ${getPoleColor(pole.color)}`}>
-                                            {poleMembers.length} {poleMembers.length > 1 ? 'membres' : 'membre'}
+                                            {t('app.poles.member', { count: poleMembers.length })}
                                         </span>
                                     </div>
                                     <p className="text-xs text-tertiary">
@@ -208,7 +210,7 @@ export const Poles = () => {
                                         <button 
                                             onClick={() => handleDeletePole(pole.id)}
                                             className="p-1.5 text-red-500 hover:text-red-600 transition-colors rounded hover:bg-red-500/10"
-                                            title="Supprimer le pôle"
+                                            title={t('app.poles.deletePole')}
                                         >
                                             <X className="w-4 h-4" />
                                         </button>
@@ -221,7 +223,7 @@ export const Poles = () => {
                                 {poleMembers.length === 0 ? (
                                     <div className="text-center py-4 text-tertiary">
                                         <Users className="w-6 h-6 mx-auto mb-1 opacity-50" />
-                                        <p className="text-xs">Aucun membre dans ce pôle</p>
+                                        <p className="text-xs">{t('app.poles.noMembers')}</p>
                                     </div>
                                 ) : (
                                     poleMembers.map((member) => (
@@ -259,7 +261,7 @@ export const Poles = () => {
                         {/* Modal Header */}
                         <div className="flex items-center justify-between p-5 border-b border-zinc-200 dark:border-white/5 sticky top-0 bg-card z-10">
                             <h2 className="text-lg font-semibold text-primary">
-                                {editingPole ? 'Modifier le pôle' : 'Nouveau pôle'}
+                                {editingPole ? t('app.poles.modal.editTitle') : t('app.poles.modal.createTitle')}
                             </h2>
                             <button 
                                 onClick={() => {
@@ -280,13 +282,13 @@ export const Poles = () => {
                             {/* Nom du pôle */}
                             <div>
                                 <label className="block text-xs font-medium text-tertiary mb-2">
-                                    Nom du pôle *
+                                    {t('app.poles.modal.name')} *
                                 </label>
                                 <input
                                     type="text"
                                     value={newPoleName}
                                     onChange={(e) => setNewPoleName(e.target.value)}
-                                    placeholder="ex: Pôle Marketing & Communication"
+                                    placeholder={t('app.poles.modal.namePlaceholder')}
                                     className="w-full px-3 py-2 bg-background border border-zinc-200 dark:border-white/5 rounded-lg text-sm text-primary placeholder:text-tertiary focus:outline-none focus:border-emerald-500/50 transition-colors"
                                 />
                             </div>
@@ -294,12 +296,12 @@ export const Poles = () => {
                             {/* Description */}
                             <div>
                                 <label className="block text-xs font-medium text-tertiary mb-2">
-                                    Description
+                                    {t('app.poles.modal.description')}
                                 </label>
                                 <textarea
                                     value={newPoleDescription}
                                     onChange={(e) => setNewPoleDescription(e.target.value)}
-                                    placeholder="Décrivez le rôle de ce pôle..."
+                                    placeholder={t('app.poles.modal.descPlaceholder')}
                                     rows={3}
                                     className="w-full px-3 py-2 bg-background border border-zinc-200 dark:border-white/5 rounded-lg text-sm text-primary placeholder:text-tertiary focus:outline-none focus:border-emerald-500/50 transition-colors resize-none"
                                 />
@@ -308,7 +310,7 @@ export const Poles = () => {
                             {/* Couleur */}
                             <div>
                                 <label className="block text-xs font-medium text-tertiary mb-2">
-                                    Couleur
+                                    {t('app.poles.modal.color')}
                                 </label>
                                 <div className="grid grid-cols-4 gap-2">
                                     {colorOptions.map((color) => (
@@ -332,7 +334,7 @@ export const Poles = () => {
                             {/* Membres */}
                             <div>
                                 <label className="block text-xs font-medium text-tertiary mb-2">
-                                    Membres ({selectedMembers.length} sélectionnés)
+                                    {t('app.poles.modal.membersLabel', { count: selectedMembers.length })}
                                 </label>
                                 <div className="border border-zinc-200 dark:border-white/5 rounded-lg max-h-64 overflow-y-auto">
                                     {members.map((member) => (
@@ -378,7 +380,7 @@ export const Poles = () => {
                                 }}
                                 className="px-4 py-2 text-sm text-tertiary hover:text-primary transition-colors"
                             >
-                                Annuler
+                                {t('app.poles.modal.cancel')}
                             </button>
                             <button 
                                 onClick={editingPole ? handleSaveEdit : handleCreatePole}
@@ -388,12 +390,12 @@ export const Poles = () => {
                                 {isSubmitting ? (
                                     <>
                                         <Loader2 className="w-4 h-4 animate-spin" />
-                                        {editingPole ? 'Enregistrement...' : 'Création...'}
+                                        {editingPole ? t('app.poles.modal.saving') : t('app.poles.modal.creating')}
                                     </>
                                 ) : (
                                     <>
                                         <Check className="w-4 h-4" />
-                                        {editingPole ? 'Enregistrer' : 'Créer le pôle'}
+                                        {editingPole ? t('app.poles.modal.save') : t('app.poles.modal.create')}
                                     </>
                                 )}
                             </button>

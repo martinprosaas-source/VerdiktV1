@@ -1,33 +1,35 @@
 import { Logo } from './Logo';
-
-const footerLinks = {
-    product: [
-        { label: 'Fonctionnalités', href: '#features' },
-        { label: 'Pricing', href: '#pricing' },
-        { label: 'Changelog', href: '#' },
-        { label: 'Roadmap', href: '#' },
-    ],
-    resources: [
-        { label: 'Documentation', href: '#' },
-        { label: 'Blog', href: '#' },
-        { label: 'Guides', href: '#' },
-        { label: 'API', href: '#' },
-    ],
-    company: [
-        { label: 'À propos', href: '#' },
-        { label: 'Carrières', href: '#' },
-        { label: 'Contact', href: '#' },
-        { label: 'Presse', href: '#' },
-    ],
-    legal: [
-        { label: 'Privacy', href: '#' },
-        { label: 'CGU', href: '#' },
-        { label: 'Mentions légales', href: '#' },
-        { label: 'RGPD', href: '#' },
-    ],
-};
+import { useTranslation } from 'react-i18next';
 
 export const Footer = () => {
+    const { t } = useTranslation();
+
+    const footerLinks = {
+        product: [
+            { label: t('landing.footer.features'), href: '#features' },
+            { label: t('landing.footer.pricing'), href: '#pricing' },
+            { label: t('landing.footer.changelog'), href: '#' },
+            { label: t('landing.footer.roadmap'), href: '#' },
+        ],
+        resources: [
+            { label: t('landing.footer.docs'), href: '#' },
+            { label: t('landing.footer.blog'), href: '#' },
+            { label: t('landing.footer.guides'), href: '#' },
+            { label: t('landing.footer.api'), href: '#' },
+        ],
+        company: [
+            { label: t('landing.footer.about'), href: '#' },
+            { label: t('landing.footer.careers'), href: '#' },
+            { label: t('landing.footer.contact'), href: '#' },
+            { label: t('landing.footer.press'), href: '#' },
+        ],
+        legal: [
+            { label: t('landing.footer.privacy'), href: '#' },
+            { label: t('landing.footer.terms'), href: '#' },
+            { label: t('landing.footer.mentions'), href: '#' },
+            { label: t('landing.footer.rgpd'), href: '#' },
+        ],
+    };
     return (
         <footer className="relative bg-card/50 dark:bg-[#050505] transition-colors duration-300 overflow-hidden">
             {/* Grid pattern - mirrors hero */}
@@ -58,7 +60,7 @@ export const Footer = () => {
                                 <Logo size="md" linkTo="/" />
                             </div>
                             <p className="text-sm text-secondary mb-6 max-w-xs">
-                                L'IA qui structure vos décisions d'équipe et transforme vos réunions en actions.
+                                {t('landing.footer.tagline')}
                             </p>
                             
                             {/* Social links */}
@@ -95,7 +97,7 @@ export const Footer = () => {
 
                         {/* Product */}
                         <div>
-                            <h4 className="text-sm font-semibold text-primary mb-4">Produit</h4>
+                            <h4 className="text-sm font-semibold text-primary mb-4">{t('landing.footer.product')}</h4>
                             <ul className="space-y-3">
                                 {footerLinks.product.map((link) => (
                                     <li key={link.label}>
@@ -109,7 +111,7 @@ export const Footer = () => {
 
                         {/* Resources */}
                         <div>
-                            <h4 className="text-sm font-semibold text-primary mb-4">Ressources</h4>
+                            <h4 className="text-sm font-semibold text-primary mb-4">{t('landing.footer.resources')}</h4>
                             <ul className="space-y-3">
                                 {footerLinks.resources.map((link) => (
                                     <li key={link.label}>
@@ -123,7 +125,7 @@ export const Footer = () => {
 
                         {/* Company */}
                         <div>
-                            <h4 className="text-sm font-semibold text-primary mb-4">Entreprise</h4>
+                            <h4 className="text-sm font-semibold text-primary mb-4">{t('landing.footer.company')}</h4>
                             <ul className="space-y-3">
                                 {footerLinks.company.map((link) => (
                                     <li key={link.label}>
@@ -137,7 +139,7 @@ export const Footer = () => {
 
                         {/* Legal */}
                         <div>
-                            <h4 className="text-sm font-semibold text-primary mb-4">Légal</h4>
+                            <h4 className="text-sm font-semibold text-primary mb-4">{t('landing.footer.legal')}</h4>
                             <ul className="space-y-3">
                                 {footerLinks.legal.map((link) => (
                                     <li key={link.label}>
@@ -155,12 +157,12 @@ export const Footer = () => {
                 <div className="py-6 border-t border-zinc-200 dark:border-white/5">
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                         <p className="text-sm text-tertiary">
-                            © 2026 Verdikt. Tous droits réservés.
+                            {t('landing.footer.rights')}
                         </p>
                         <div className="flex items-center gap-6 text-sm text-tertiary">
                             <span className="flex items-center gap-2">
                                 <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                                Tous les systèmes opérationnels
+                                {t('landing.footer.status')}
                             </span>
                             <a href="#" className="hover:text-primary transition-colors">
                                 Status

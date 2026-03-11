@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Plus, Sparkles, Filter, ArrowUpDown, Clock, AlertTriangle, SortAsc, SortDesc } from 'lucide-react';
 import { DecisionCard } from '../../components/app/cards/DecisionCard';
 import { EmptyState } from '../../components/app/feedback/EmptyState';
@@ -14,6 +15,7 @@ type VoteFilterType = 'all' | 'voted' | 'not_voted';
 export const DecisionsList = () => {
     const { decisions, loading } = useDecisions();
     const { members } = useTeam();
+    const { t } = useTranslation();
     const [filter, setFilter] = useState<FilterType>('all');
     const [sortBy, setSortBy] = useState<SortType>('date_desc');
     const [creatorFilter, setCreatorFilter] = useState<string>('all');
@@ -85,9 +87,9 @@ export const DecisionsList = () => {
     if (loading) return <DecisionsListSkeleton />;
 
     const filters: { key: FilterType; label: string; count: number }[] = [
-        { key: 'all', label: 'Toutes', count: decisions.length },
-        { key: 'active', label: 'Actives', count: activeCount },
-        { key: 'completed', label: 'Terminées', count: completedCount },
+        { key: 'all', label: t('app.decisions.tabs.all'), count: decisions.length },
+        { key: 'active', label: t('app.decisions.tabs.active'), count: activeCount },
+        { key: 'completed', label: t('app.decisions.tabs.completed'), count: completedCount },
     ];
 
     const hasActiveFilters = creatorFilter !== 'all' || voteFilter !== 'all' || urgentOnly;
@@ -96,13 +98,13 @@ export const DecisionsList = () => {
         <div>
             {/* Header */}
             <div className="flex items-center justify-between mb-4 sm:mb-6">
-                <h1 className="text-lg sm:text-xl font-semibold text-primary">Décisions</h1>
+                <h1 className="text-lg sm:text-xl font-semibold text-primary">{t('app.decisions.title')}</h1>
                 <Link 
                     to="/app/decisions/new"
                     className="inline-flex items-center gap-1.5 px-3 py-2 sm:py-1.5 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-medium rounded-lg transition-colors"
                 >
                     <Plus className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Nouvelle</span>
+                    <span className="hidden sm:inline">{t('app.decisions.new')}</span>
                 </Link>
             </div>
 
@@ -135,7 +137,7 @@ export const DecisionsList = () => {
                     }`}
                 >
                     <Filter className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Filtres</span>
+                    <span className="hidden sm:inline">{t('app.decisions.filters')}</span>
                     {hasActiveFilters && (
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                     )}
@@ -145,14 +147,14 @@ export const DecisionsList = () => {
                 <div className="relative group flex-shrink-0">
                     <button className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded-lg border border-zinc-200 dark:border-white/10 text-secondary hover:text-primary transition-colors">
                         <ArrowUpDown className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">Trier</span>
+                        <span className="hidden sm:inline">{t('app.decisions.sort')}</span>
                     </button>
                     <div className="absolute right-0 sm:left-0 top-full mt-1 w-48 bg-card border border-zinc-200 dark:border-white/10 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
                         {[
-                            { key: 'date_desc', label: 'Plus récentes', icon: SortDesc },
-                            { key: 'date_asc', label: 'Plus anciennes', icon: SortAsc },
-                            { key: 'deadline', label: 'Deadline proche', icon: Clock },
-                            { key: 'participation', label: 'Participation', icon: ArrowUpDown },
+                            { key: 'date_desc', label: t('app.decisions.sortOptions.newest'), icon: SortDesc },
+                            { key: 'date_asc', label: t('app.decisions.sortOptions.oldest'), icon: SortAsc },
+                            { key: 'deadline', label: t('app.decisions.sortOptions.deadline'), icon: Clock },
+                            { key: 'participation', label: t('app.decisions.sortOptions.participation'), icon: ArrowUpDown },
                         ].map(({ key, label, icon: Icon }) => (
                             <button
                                 key={key}
@@ -178,14 +180,14 @@ export const DecisionsList = () => {
                         {/* Creator Filter */}
                         <div className="w-full sm:w-auto">
                             <label className="block text-[10px] text-tertiary uppercase tracking-wider mb-1">
-                                Créée par
+                                {t('app.decisions.filterCreator')}
                             </label>
                             <select
                                 value={creatorFilter}
                                 onChange={(e) => setCreatorFilter(e.target.value)}
                                 className="w-full sm:w-auto px-3 py-2 sm:py-1.5 text-xs bg-background border border-zinc-200 dark:border-white/5 rounded-lg text-primary"
                             >
-                                <option value="all">Tous</option>
+                                <option value="all">{t('app.decisions.filterAll')}</option>
                                 {members.map(member => (
                                     <option key={member.id} value={member.id}>
                                         {member.first_name} {member.last_name}
@@ -197,16 +199,16 @@ export const DecisionsList = () => {
                         {/* Vote Filter */}
                         <div className="w-full sm:w-auto">
                             <label className="block text-[10px] text-tertiary uppercase tracking-wider mb-1">
-                                Mon vote
+                                {t('app.decisions.filterVote')}
                             </label>
                             <select
                                 value={voteFilter}
                                 onChange={(e) => setVoteFilter(e.target.value as VoteFilterType)}
                                 className="w-full sm:w-auto px-3 py-2 sm:py-1.5 text-xs bg-background border border-zinc-200 dark:border-white/5 rounded-lg text-primary"
                             >
-                                <option value="all">Tous</option>
-                                <option value="voted">J'ai voté</option>
-                                <option value="not_voted">En attente de vote</option>
+                                <option value="all">{t('app.decisions.filterAll')}</option>
+                                <option value="voted">{t('app.decisions.filterVoted')}</option>
+                                <option value="not_voted">{t('app.decisions.filterPending')}</option>
                             </select>
                         </div>
 
@@ -220,7 +222,7 @@ export const DecisionsList = () => {
                             />
                             <span className="text-xs text-secondary flex items-center gap-1">
                                 <AlertTriangle className="w-3 h-3 text-orange-500" />
-                                Urgentes seulement
+                                {t('app.decisions.urgentOnly')}
                             </span>
                         </label>
 
@@ -234,7 +236,7 @@ export const DecisionsList = () => {
                                 }}
                                 className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline"
                             >
-                                Réinitialiser
+                                {t('app.decisions.reset')}
                             </button>
                         )}
                     </div>
@@ -243,7 +245,7 @@ export const DecisionsList = () => {
 
             {/* Results count */}
             <div className="mb-4 text-xs text-tertiary">
-                {filteredAndSortedDecisions.length} décision{filteredAndSortedDecisions.length !== 1 ? 's' : ''}
+                {t('app.decisions.count', { count: filteredAndSortedDecisions.length })}
             </div>
 
             {/* Decisions List */}
@@ -261,8 +263,8 @@ export const DecisionsList = () => {
             ) : (
                 <EmptyState
                     icon={Sparkles}
-                    title="Aucune décision"
-                    description={hasActiveFilters ? "Aucune décision ne correspond à vos filtres." : "Créez votre première décision pour commencer."}
+                    title={t('app.decisions.empty')}
+                    description={hasActiveFilters ? t('app.decisions.emptyFiltered') : t('app.decisions.emptyFirst')}
                     action={
                         hasActiveFilters ? (
                             <button
@@ -274,7 +276,7 @@ export const DecisionsList = () => {
                                 }}
                                 className="text-sm text-emerald-500 hover:text-emerald-400"
                             >
-                                Réinitialiser les filtres
+                                {t('app.decisions.resetFilters')}
                             </button>
                         ) : (
                             <Link 

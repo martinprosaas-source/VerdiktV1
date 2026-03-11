@@ -2,25 +2,26 @@ import { useState } from 'react';
 import { UserPlus, MoreVertical, Clock, Mail, X, RefreshCw, Loader2 } from 'lucide-react';
 import { Avatar } from '../../components/app/feedback/Avatar';
 import { InviteModal } from '../../components/app/InviteModal';
+import { useTranslation } from 'react-i18next';
 import { useTeam, usePoles, useDelayedLoading, useAuth } from '../../hooks';
 import type { PendingInvitation } from '../../hooks/useTeam';
 
-const getRoleBadge = (role: string) => {
+const getRoleBadge = (role: string, t: (k: string) => string) => {
     const styles = {
         owner: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
         admin: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
         member: 'bg-zinc-100 dark:bg-white/5 text-tertiary border-zinc-200 dark:border-white/10',
     };
     
-    const labels = {
-        owner: 'Owner',
-        admin: 'Admin',
-        member: 'Membre',
+    const labels: Record<string, string> = {
+        owner: t('common.roles.owner'),
+        admin: t('common.roles.admin'),
+        member: t('common.roles.member'),
     };
 
     return (
         <span className={`px-2 py-0.5 text-xs font-medium rounded border ${styles[role as keyof typeof styles] || styles.member}`}>
-            {labels[role as keyof typeof labels] || role}
+            {labels[role] || role}
         </span>
     );
 };
@@ -53,17 +54,17 @@ const getPoleBadge = (poleId: string | null | undefined, polesData: any[]) => {
     );
 };
 
-const getStatusBadge = (status: 'pending' | 'expired') => {
+const getStatusBadge = (status: 'pending' | 'expired', t: (k: string) => string) => {
     if (status === 'expired') {
         return (
             <span className="px-2 py-0.5 text-xs font-medium rounded border bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20">
-                Expiré
+                {t('app.team.status.expired')}
             </span>
         );
     }
     return (
         <span className="px-2 py-0.5 text-xs font-medium rounded border bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">
-            En attente
+            {t('app.team.status.pending')}
         </span>
     );
 };
@@ -89,6 +90,7 @@ export const Team = () => {
     const { members, pendingInvitations, cancelInvitation, loading, refetch } = useTeam();
     const { poles: polesData } = usePoles();
     const { canManage } = useAuth();
+    const { t } = useTranslation();
     const showSpinner = useDelayedLoading(loading);
     const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<'members' | 'pending'>('members');
@@ -108,9 +110,9 @@ export const Team = () => {
             {/* Header */}
             <div className="flex items-center justify-between mb-4 sm:mb-6">
                 <div>
-                    <h1 className="text-lg sm:text-xl font-semibold text-primary">Équipe</h1>
+                    <h1 className="text-lg sm:text-xl font-semibold text-primary">{t('app.team.title')}</h1>
                     <p className="text-sm text-tertiary">
-                        {members.length} membres • {pendingInvitations.length} en attente
+                        {t('app.team.subtitle', { members: members.length, pending: pendingInvitations.length })}
                     </p>
                 </div>
                 {canManage && (
@@ -119,7 +121,7 @@ export const Team = () => {
                         className="inline-flex items-center gap-1.5 px-3 py-2 sm:py-1.5 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-medium rounded-lg transition-colors"
                     >
                         <UserPlus className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">Inviter</span>
+                        <span className="hidden sm:inline">{t('app.team.invite')}</span>
                     </button>
                 )}
             </div>
@@ -134,7 +136,7 @@ export const Team = () => {
                             : 'text-tertiary hover:text-secondary'
                     }`}
                 >
-                    Membres ({members.length})
+                    {t('app.team.tabs.members', { count: members.length })}
                 </button>
                 <button
                     onClick={() => setActiveTab('pending')}
@@ -144,7 +146,7 @@ export const Team = () => {
                             : 'text-tertiary hover:text-secondary'
                     }`}
                 >
-                    En attente
+                    {t('app.team.tabs.pending')}
                     {pendingInvitations.length > 0 && (
                         <span className="px-1.5 py-0.5 text-xs bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-full">
                             {pendingInvitations.length}
@@ -183,7 +185,7 @@ export const Team = () => {
                         </div>
                         <div className="flex items-center justify-between mt-3 pt-3 border-t border-zinc-200 dark:border-white/5">
                             <div className="flex flex-wrap items-center gap-2">
-                                {getRoleBadge(member.role)}
+                                {getRoleBadge(member.role, t)}
                                 {getPoleBadge(member.pole_id, polesData)}
                             </div>
                             <span className="text-xs text-tertiary">
@@ -200,19 +202,19 @@ export const Team = () => {
                     <thead>
                         <tr className="border-b border-zinc-200 dark:border-white/5">
                             <th className="text-left text-[10px] font-medium text-tertiary uppercase tracking-wider px-4 py-3">
-                                Membre
+                                {t('app.team.tableHeaders.member')}
                             </th>
                             <th className="text-left text-[10px] font-medium text-tertiary uppercase tracking-wider px-4 py-3 hidden md:table-cell">
-                                Email
+                                {t('app.team.tableHeaders.email')}
                             </th>
                             <th className="text-left text-[10px] font-medium text-tertiary uppercase tracking-wider px-4 py-3">
-                                Rôle
+                                {t('app.team.tableHeaders.role')}
                             </th>
                             <th className="text-left text-[10px] font-medium text-tertiary uppercase tracking-wider px-4 py-3 hidden xl:table-cell">
-                                Pôle
+                                {t('app.team.tableHeaders.pole')}
                             </th>
                             <th className="text-left text-[10px] font-medium text-tertiary uppercase tracking-wider px-4 py-3 hidden lg:table-cell">
-                                Ajouté
+                                {t('app.team.tableHeaders.added')}
                             </th>
                             <th className="w-10"></th>
                         </tr>
@@ -237,7 +239,7 @@ export const Team = () => {
                                     <span className="text-sm text-tertiary">{member.email}</span>
                                 </td>
                                 <td className="px-4 py-3">
-                                    {getRoleBadge(member.role)}
+                                    {getRoleBadge(member.role, t)}
                                 </td>
                                 <td className="px-4 py-3 hidden xl:table-cell">
                                     {getPoleBadge(member.pole_id, polesData)}
@@ -263,7 +265,7 @@ export const Team = () => {
                         {pendingInvitations.length === 0 ? (
                             <div className="text-center py-8 text-tertiary">
                                 <Mail className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                                <p className="text-sm">Aucune invitation en attente</p>
+                                <p className="text-sm">{t('app.team.empty.pending')}</p>
                             </div>
                         ) : (
                             pendingInvitations.map((invite: PendingInvitation) => (
@@ -281,7 +283,7 @@ export const Team = () => {
                                                     {invite.email}
                                                 </p>
                                                 <p className="text-xs text-tertiary">
-                                                    Invité {formatRelativeDate(new Date(invite.created_at))}
+                                                    {t('app.team.invitedAt', { date: formatRelativeDate(new Date(invite.created_at)) })}
                                                 </p>
                                             </div>
                                         </div>
@@ -289,7 +291,7 @@ export const Team = () => {
                                             <button 
                                                 onClick={() => cancelInvitation(invite.id)}
                                                 className="p-1.5 text-tertiary hover:text-red-500 transition-colors rounded hover:bg-red-500/10"
-                                                title="Annuler l'invitation"
+                                                title={t('app.team.cancelInvite')}
                                             >
                                                 <X className="w-4 h-4" />
                                             </button>
@@ -297,8 +299,8 @@ export const Team = () => {
                                     </div>
                                     <div className="flex items-center justify-between mt-3 pt-3 border-t border-zinc-200 dark:border-white/5">
                                         <div className="flex items-center gap-2">
-                                            {getStatusBadge(isExpired(invite.expires_at) ? 'expired' : 'pending')}
-                                            {getRoleBadge(invite.role)}
+                                            {getStatusBadge(isExpired(invite.expires_at) ? 'expired' : 'pending', t)}
+                                            {getRoleBadge(invite.role, t)}
                                         </div>
                                     </div>
                                 </div>
@@ -311,8 +313,8 @@ export const Team = () => {
                         {pendingInvitations.length === 0 ? (
                             <div className="text-center py-12 text-tertiary">
                                 <Mail className="w-10 h-10 mx-auto mb-3 opacity-50" />
-                                <p className="text-sm">Aucune invitation en attente</p>
-                                <p className="text-xs mt-1">Les nouvelles invitations apparaîtront ici</p>
+                                <p className="text-sm">{t('app.team.empty.pending')}</p>
+                                <p className="text-xs mt-1">{t('app.team.empty.pendingDesc')}</p>
                             </div>
                         ) : (
                             <table className="w-full">
@@ -338,9 +340,9 @@ export const Team = () => {
                                                     </span>
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-3">{getRoleBadge(invite.role)}</td>
+                                            <td className="px-4 py-3">{getRoleBadge(invite.role, t)}</td>
                                             <td className="px-4 py-3">
-                                                {getStatusBadge(isExpired(invite.expires_at) ? 'expired' : 'pending')}
+                                                {getStatusBadge(isExpired(invite.expires_at) ? 'expired' : 'pending', t)}
                                             </td>
                                             <td className="px-4 py-3 hidden md:table-cell">
                                                 <span className="text-sm text-tertiary">
@@ -352,7 +354,7 @@ export const Team = () => {
                                                     <button 
                                                         onClick={() => { refetch(); }}
                                                         className="p-1.5 text-tertiary hover:text-emerald-500 transition-colors rounded hover:bg-emerald-500/10"
-                                                        title="Rafraîchir"
+                                                        title={t('app.team.refresh')}
                                                     >
                                                         <RefreshCw className="w-4 h-4" />
                                                     </button>
@@ -360,7 +362,7 @@ export const Team = () => {
                                                         <button 
                                                             onClick={() => cancelInvitation(invite.id)}
                                                             className="p-1.5 text-tertiary hover:text-red-500 transition-colors rounded hover:bg-red-500/10"
-                                                            title="Annuler l'invitation"
+                                                            title={t('app.team.cancelInvite')}
                                                         >
                                                             <X className="w-4 h-4" />
                                                         </button>

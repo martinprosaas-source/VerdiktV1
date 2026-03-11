@@ -1,5 +1,6 @@
 import { Section, FadeIn } from './ui/Section';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { ExternalLink, ArrowRight } from 'lucide-react';
 
 const PROMPT = encodeURIComponent(
@@ -37,6 +38,7 @@ const aiTools = [
 ];
 
 export const AskAI = () => {
+    const { t } = useTranslation();
     return (
         <Section className="py-20 sm:py-28 bg-background relative overflow-hidden transition-colors duration-300">
             <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6">
@@ -48,19 +50,19 @@ export const AskAI = () => {
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                             </span>
-                            <span className="text-sm font-medium text-secondary">Pas encore convaincu ?</span>
+                            <span className="text-sm font-medium text-secondary">{t('landing.askAI.badge')}</span>
                         </div>
 
                         {/* Headline */}
                         <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-primary leading-[1] tracking-tight mb-4">
-                            Demandez à une IA
+                            {t('landing.askAI.title1')}
                             <br />
-                            <span className="text-tertiary">ce qu'elle pense de Verdikt</span>
+                            <span className="text-tertiary">{t('landing.askAI.title2')}</span>
                         </h2>
 
                         {/* Subtitle */}
                         <p className="text-base sm:text-lg text-secondary mb-10 max-w-xl mx-auto">
-                            Cliquez sur votre IA préférée et laissez-la vous expliquer pourquoi Verdikt peut transformer vos décisions d'équipe.
+                            {t('landing.askAI.subtitle')}
                         </p>
 
                         {/* AI Buttons */}
@@ -76,7 +78,7 @@ export const AskAI = () => {
                                     className="group w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3.5 bg-zinc-900 dark:bg-white/[0.05] hover:bg-zinc-800 dark:hover:bg-white/[0.08] border border-zinc-800 dark:border-white/10 hover:border-zinc-700 dark:hover:border-white/20 rounded-xl text-sm font-semibold text-white transition-all duration-200"
                                 >
                                     {tool.icon}
-                                    Demander à {tool.name}
+                                    {tool.name === 'ChatGPT' ? t('landing.askAI.chatgpt') : tool.name === 'Claude' ? t('landing.askAI.claude') : t('landing.askAI.perplexity')}
                                     <ExternalLink className="w-3.5 h-3.5 text-tertiary opacity-0 group-hover:opacity-100 transition-opacity" />
                                 </motion.a>
                             ))}
@@ -90,7 +92,7 @@ export const AskAI = () => {
                             whileTap={{ scale: 0.98 }}
                             className="group inline-flex items-center gap-2 px-10 py-5 bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-lg rounded-full transition-all duration-300 shadow-[0_0_50px_rgba(16,185,129,0.3)] hover:shadow-[0_0_70px_rgba(16,185,129,0.4)]"
                         >
-                            Rejoindre la beta
+                            {t('landing.askAI.cta')}
                             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                         </motion.button>
                     </div>
