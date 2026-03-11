@@ -43,14 +43,15 @@ export const FeedbackModal = ({ onClose }: FeedbackModalProps) => {
 
     return (
         <>
-            {/* Backdrop — léger */}
+            {/* Backdrop */}
             <div
-                className="fixed inset-0 z-50"
+                className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
                 onClick={onClose}
             />
 
-            {/* Panel */}
-            <div className="fixed bottom-4 left-4 z-50 w-80 bg-card border border-zinc-200 dark:border-white/10 rounded-xl shadow-2xl overflow-hidden">
+            {/* Panel — centré */}
+            <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+            <div className="w-full max-w-md mx-4 bg-card border border-zinc-200 dark:border-white/10 rounded-xl shadow-2xl overflow-hidden pointer-events-auto">
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100 dark:border-white/5">
                     <div>
@@ -130,6 +131,7 @@ export const FeedbackModal = ({ onClose }: FeedbackModalProps) => {
                         </>
                     )}
                 </div>
+            </div>
             </div>
         </>
     );
