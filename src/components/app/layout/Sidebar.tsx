@@ -205,26 +205,24 @@ export const Sidebar = () => {
                     )}
                 </button>
 
-                {/* Theme Toggle */}
-                <button
-                    onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-                    className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg text-sm text-secondary hover:text-primary hover:bg-zinc-50 dark:hover:bg-white/[0.03] transition-colors"
-                >
-                    {theme === 'light' ? (
-                        <>
-                            <Moon className="w-4 h-4" />
-                            <span>{t('common.darkMode', 'Mode sombre')}</span>
-                        </>
-                    ) : (
-                        <>
-                            <Sun className="w-4 h-4" />
-                            <span>{t('common.lightMode', 'Mode clair')}</span>
-                        </>
-                    )}
-                </button>
-
-                {/* Language Toggle */}
-                <div className="px-2 py-1">
+                {/* Theme + Language on same row */}
+                <div className="flex items-center justify-between px-1">
+                    <button
+                        onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+                        className="flex items-center gap-2.5 flex-1 px-2 py-2.5 rounded-lg text-sm text-secondary hover:text-primary hover:bg-zinc-50 dark:hover:bg-white/[0.03] transition-colors"
+                    >
+                        {theme === 'light' ? (
+                            <>
+                                <Moon className="w-4 h-4" />
+                                <span>{t('common.darkMode', 'Mode sombre')}</span>
+                            </>
+                        ) : (
+                            <>
+                                <Sun className="w-4 h-4" />
+                                <span>{t('common.lightMode', 'Mode clair')}</span>
+                            </>
+                        )}
+                    </button>
                     <LanguageToggle />
                 </div>
 
