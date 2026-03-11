@@ -156,6 +156,28 @@ export const useDecisions = () => {
                 };
             });
 
+            // Auto-complete decisions whose deadline has passed
+            const now = new Date();
+            const expiredIds = decisionsWithDetails
+                .filter(d => d.status === 'active' && new Date(d.deadline) < now)
+                .map(d => d.id);
+
+            if (expiredIds.length > 0) {
+                // Update DB in background — non-blocking
+                supabase
+                    .from('decisions')
+                    .update({ status: 'completed' })
+                    .in('id', expiredIds)
+                    .then(() => {})
+                    .catch(() => {});
+
+                // Update local data immediately so UI reflects correct status
+                expiredIds.forEach(id => {
+                    const d = decisionsWithDetails.find(d => d.id === id);
+                    if (d) d.status = 'completed';
+                });
+            }
+
             // Update module-level cache
             cachedDecisions = decisionsWithDetails;
             cachedTeamId = profile.team_id;
