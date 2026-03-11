@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, Shield } from 'lucide-react';
 import { Logo, LogoIcon } from '../../components/Logo';
 import { supabase } from '../../lib/supabase';
@@ -16,6 +17,7 @@ const GoogleIcon = () => (
 
 export const Login = () => {
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -43,9 +45,9 @@ export const Login = () => {
         } catch (err: any) {
             console.error('Login error:', err);
             if (err.message === 'Invalid login credentials') {
-                setError('Email ou mot de passe incorrect.');
+                setError(t('auth.login.errors.credentials'));
             } else {
-                setError(err.message || 'Erreur lors de la connexion');
+                setError(err.message || t('auth.login.errors.generic'));
             }
         } finally {
             setIsLoading(false);
@@ -68,7 +70,7 @@ export const Login = () => {
             if (error) throw error;
         } catch (err: any) {
             console.error('Google login error:', err);
-            setError(err.message || 'Erreur lors de la connexion Google');
+            setError(err.message || t('auth.login.errors.google'));
             setGoogleLoading(false);
         }
     };
@@ -91,16 +93,16 @@ export const Login = () => {
                     {/* Beta badge */}
                     <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 mb-6">
                         <Shield className="w-3.5 h-3.5 text-amber-500" />
-                        <span className="text-xs font-medium text-amber-500">Accès réservé aux beta testers</span>
+                        <span className="text-xs font-medium text-amber-500">{t('auth.login.badge')}</span>
                     </div>
 
                     {/* Header */}
                     <div className="mb-8">
                         <h1 className="text-2xl font-bold text-primary mb-2">
-                            Connexion
+                            {t('auth.login.title')}
                         </h1>
                         <p className="text-secondary">
-                            Connectez-vous à votre compte Verdikt.
+                            {t('auth.login.subtitle')}
                         </p>
                     </div>
 
@@ -115,13 +117,13 @@ export const Login = () => {
                         ) : (
                             <GoogleIcon />
                         )}
-                        Continuer avec Google
+                        {t('auth.login.googleCta')}
                     </button>
 
                     {/* Divider */}
                     <div className="flex items-center gap-3 my-6">
                         <div className="flex-1 h-px bg-zinc-200 dark:bg-white/10" />
-                        <span className="text-xs text-tertiary">ou</span>
+                        <span className="text-xs text-tertiary">{t('common.or')}</span>
                         <div className="flex-1 h-px bg-zinc-200 dark:bg-white/10" />
                     </div>
 
@@ -130,7 +132,7 @@ export const Login = () => {
                         {/* Email */}
                         <div>
                             <label className="block text-sm font-medium text-primary mb-2">
-                                Email
+                                {t('auth.login.email')}
                             </label>
                             <div className="relative">
                                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-tertiary" />
@@ -138,7 +140,7 @@ export const Login = () => {
                                     type="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="vous@entreprise.com"
+                                    placeholder={t('auth.login.emailPlaceholder')}
                                     disabled={isLoading || googleLoading}
                                     className="w-full pl-11 pr-4 py-3 bg-card border border-zinc-200 dark:border-white/10 rounded-xl text-primary placeholder:text-tertiary focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all disabled:opacity-50"
                                     required
@@ -149,7 +151,7 @@ export const Login = () => {
                         {/* Password */}
                         <div>
                             <label className="block text-sm font-medium text-primary mb-2">
-                                Mot de passe
+                                {t('auth.login.password')}
                             </label>
                             <div className="relative">
                                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-tertiary" />
@@ -193,7 +195,7 @@ export const Login = () => {
                                 <Loader2 className="w-5 h-5 animate-spin" />
                             ) : (
                                 <>
-                                    Se connecter
+                                    {t('auth.login.submit')}
                                     <ArrowRight className="w-5 h-5" />
                                 </>
                             )}
@@ -202,21 +204,18 @@ export const Login = () => {
 
                     {/* Signup link */}
                     <p className="mt-6 text-center text-secondary text-sm">
-                        Pas encore de compte ?{' '}
+                        {t('auth.login.noAccount')}{' '}
                         <Link to="/signup" className="text-emerald-600 dark:text-emerald-400 font-medium hover:underline">
-                            Créer un compte
+                            {t('auth.login.createAccount')}
                         </Link>
                     </p>
 
                     {/* Help text */}
                     <div className="mt-6 p-4 bg-card/50 border border-zinc-200 dark:border-white/5 rounded-xl">
                         <p className="text-sm text-secondary">
-                            <span className="font-medium text-primary">Problème de connexion ?</span>
+                            <span className="font-medium text-primary">{t('auth.login.help')}</span>
                             <br />
-                            Contactez-nous à{' '}
-                            <a href="mailto:support@verdikt.ai" className="text-emerald-600 dark:text-emerald-400 hover:underline">
-                                support@verdikt.ai
-                            </a>
+                            {t('auth.login.helpContact')}
                         </p>
                     </div>
                 </motion.div>
@@ -250,10 +249,10 @@ export const Login = () => {
                     </motion.div>
 
                     <h2 className="text-4xl xl:text-5xl font-bold leading-[1.1] tracking-tight">
-                        <span className="text-white/50">Arrêtez de débattre.</span>
+                        <span className="text-white/50">{t('auth.login.tagline1')}</span>
                         <br />
-                        <span className="text-white">Commencez à </span>
-                        <span className="text-emerald-400">décider</span>
+                        <span className="text-white">{t('auth.login.tagline2')}</span>
+                        <span className="text-emerald-400">{t('auth.login.tagline3')}</span>
                         <span className="text-white">.</span>
                     </h2>
                 </motion.div>

@@ -2,43 +2,30 @@ import { useState } from 'react';
 import { Section, FadeIn } from './ui/Section';
 import { Plus, Minus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-
-const faqs = [
-    {
-        question: 'Est-ce que ça remplace nos réunions ?',
-        answer: 'Non, ça remplace les réunions inutiles. Celles qui tournent en rond pendant 2h sans jamais conclure. Les vraies discussions stratégiques restent humaines. Verdikt vous aide juste à arriver préparés.',
-    },
-    {
-        question: 'Comment l\'IA génère-t-elle la synthèse ?',
-        answer: 'Elle analyse les arguments de chaque votant, identifie les points de consensus et de friction, et propose une recommandation basée sur la majorité pondérée. Tout est transparent et traçable dans le Decision Log.',
-    },
-    {
-        question: 'Mes données sont-elles sécurisées ?',
-        answer: 'Oui. Hébergement EU (France), chiffrement end-to-end, conformité RGPD. Nous ne vendons jamais vos données et vous pouvez les exporter ou les supprimer à tout moment.',
-    },
-    {
-        question: 'Combien de temps pour setup ?',
-        answer: '30 secondes. Créez un compte, invitez votre équipe via un lien, lancez votre première décision. Pas de formation requise, l\'interface est conçue pour être immédiatement intuitive.',
-    },
-    {
-        question: 'Et si je veux annuler ?',
-        answer: 'Un clic depuis vos paramètres. Pas de frais cachés, pas de période d\'engagement, pas de dark patterns. Vos données vous appartiennent.',
-    },
-];
+import { useTranslation } from 'react-i18next';
 
 export const FAQ = () => {
     const [openIndex, setOpenIndex] = useState<number | null>(0);
+    const { t } = useTranslation();
+
+    const faqs = [
+        { question: t('landing.faq.q1'), answer: t('landing.faq.a1') },
+        { question: t('landing.faq.q2'), answer: t('landing.faq.a2') },
+        { question: t('landing.faq.q3'), answer: t('landing.faq.a3') },
+        { question: t('landing.faq.q4'), answer: t('landing.faq.a4') },
+        { question: t('landing.faq.q5'), answer: t('landing.faq.a5') },
+    ];
 
     return (
         <Section className="py-28 sm:py-40 bg-card/50 dark:bg-[#0a0a0a] relative overflow-hidden transition-colors duration-300">
             <div className="max-w-4xl mx-auto px-4 sm:px-6">
                 {/* Header */}
                 <FadeIn className="mb-16 sm:mb-20">
-                    <p className="text-emerald-500 font-mono text-sm tracking-wider mb-4">// FAQ</p>
+                    <p className="text-emerald-500 font-mono text-sm tracking-wider mb-4">{t('landing.faq.label')}</p>
                     <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-primary leading-[0.9] tracking-tight">
-                        Questions
+                        {t('landing.faq.title').split('\n')[0]}
                         <br />
-                        <span className="text-tertiary">fréquentes.</span>
+                        <span className="text-tertiary">{t('landing.faq.title').split('\n')[1] || ''}</span>
                     </h2>
                 </FadeIn>
 
@@ -96,7 +83,7 @@ export const FAQ = () => {
                 <FadeIn delay={0.3}>
                     <div className="mt-12 text-center">
                         <p className="text-tertiary">
-                            Autre question ?{' '}
+                            {t('landing.faq.other')}{' '}
                             <a href="mailto:hello@verdikt.ai" className="text-emerald-500 hover:underline">
                                 hello@verdikt.ai
                             </a>

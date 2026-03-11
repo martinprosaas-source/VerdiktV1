@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Plus, Sparkles, Vote, BarChart3, Calendar } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { StatCard } from '../../components/app/cards/StatCard';
 import { DecisionCard } from '../../components/app/cards/DecisionCard';
 import { EmptyState } from '../../components/app/feedback/EmptyState';
@@ -11,6 +12,7 @@ import { useMemo } from 'react';
 export const Dashboard = () => {
     const { profile } = useAuth();
     const { decisions, loading } = useDecisions();
+    const { t } = useTranslation();
 
     // Calculate stats from real data
     const stats = useMemo(() => {
@@ -56,10 +58,10 @@ export const Dashboard = () => {
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-6">
                 <div>
                     <h1 className="text-lg sm:text-xl font-semibold text-primary">
-                        Bonjour {profile?.first_name || 'Utilisateur'}
+                        {t('app.dashboard.greeting', { name: profile?.first_name || '' })}
                     </h1>
                     <p className="text-sm text-secondary">
-                        Voici un aperçu de vos décisions
+                        {t('app.dashboard.subtitle')}
                     </p>
                 </div>
                 <Link 
@@ -67,7 +69,7 @@ export const Dashboard = () => {
                     className="inline-flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-medium rounded-lg transition-colors w-full sm:w-auto"
                 >
                     <Plus className="w-3.5 h-3.5" />
-                    Nouvelle décision
+                    {t('app.dashboard.newDecision')}
                 </Link>
             </div>
 
@@ -75,17 +77,17 @@ export const Dashboard = () => {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
                 <StatCard
                     icon={Vote}
-                    label="En attente de ton vote"
+                    label={t('app.dashboard.pendingVote')}
                     value={stats.pendingVotes}
                 />
                 <StatCard
                     icon={BarChart3}
-                    label="Décisions actives"
+                    label={t('app.dashboard.activeDecisions')}
                     value={stats.activeDecisions.length}
                 />
                 <StatCard
                     icon={Calendar}
-                    label="Décisions ce mois"
+                    label={t('app.dashboard.monthDecisions')}
                     value={stats.decisionsThisMonth}
                 />
             </div>
@@ -94,13 +96,13 @@ export const Dashboard = () => {
             <section>
                 <div className="flex items-center justify-between mb-3">
                     <h2 className="text-xs font-medium text-tertiary uppercase tracking-wider">
-                        Décisions actives
+                        {t('app.dashboard.activeSection')}
                     </h2>
                     <Link 
                         to="/app/decisions"
                         className="text-xs text-tertiary hover:text-primary transition-colors"
                     >
-                        Voir tout →
+                        {t('app.dashboard.seeAll')}
                     </Link>
                 </div>
 
@@ -118,15 +120,15 @@ export const Dashboard = () => {
                 ) : (
                     <EmptyState
                         icon={Sparkles}
-                        title="Aucune décision en cours"
-                        description="C'est le moment idéal pour lancer une nouvelle décision."
+                        title={t('app.dashboard.empty')}
+                        description={t('app.dashboard.emptyDesc')}
                         action={
                             <Link 
                                 to="/app/decisions/new"
                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-medium rounded-lg transition-colors"
                             >
                                 <Plus className="w-3.5 h-3.5" />
-                                Nouvelle décision
+                                {t('app.dashboard.newDecision')}
                             </Link>
                         }
                     />

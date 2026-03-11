@@ -2,10 +2,12 @@ import { ArrowRight, ChevronDown, Volume2, VolumeX } from 'lucide-react';
 import { Section, FadeIn } from './ui/Section';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export const Hero = () => {
     const [isMuted, setIsMuted] = useState(true);
     const videoRef = useRef<HTMLVideoElement>(null);
+    const { t } = useTranslation();
 
     const handleUnmute = () => {
         if (videoRef.current) {
@@ -47,7 +49,7 @@ export const Hero = () => {
                     >
                         <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20">
                             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                            <span className="text-xs sm:text-sm font-medium text-emerald-500">Beta ouverte — 75 places max</span>
+                            <span className="text-xs sm:text-sm font-medium text-emerald-500">{t('landing.hero.badge')}</span>
                         </div>
                     </motion.div>
                 </FadeIn>
@@ -56,11 +58,11 @@ export const Hero = () => {
                 <FadeIn delay={0.1}>
                     <div className="text-center mb-8">
                         <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-8xl font-bold tracking-tight leading-[0.95]">
-                            <span className="text-tertiary">Arrêtez de débattre.</span>
+                            <span className="text-tertiary">{t('landing.hero.title1')}</span>
                             <br />
-                            <span className="text-primary">Commencez à </span>
+                            <span className="text-primary">{t('landing.hero.title2prefix')}</span>
                             <span className="relative inline-block">
-                                <span className="text-emerald-500">décider</span>
+                                <span className="text-emerald-500">{t('landing.hero.title2word')}</span>
                                 <svg className="absolute -bottom-1 sm:-bottom-2 left-0 w-full" viewBox="0 0 200 8" fill="none">
                                     <path d="M2 6C50 2 150 2 198 6" stroke="rgb(16 185 129)" strokeWidth="3" strokeLinecap="round"/>
                                 </svg>
@@ -73,8 +75,7 @@ export const Hero = () => {
                 {/* Subtitle */}
                 <FadeIn delay={0.2}>
                     <p className="text-center text-lg sm:text-xl text-secondary max-w-2xl mx-auto mb-12 leading-relaxed">
-                        Verdikt structure vos décisions d'équipe, collecte les avis de chacun,
-                        et vous donne une recommandation claire. <span className="text-primary font-medium">Sans réunion de 2h</span>.
+                        {t('landing.hero.subtitle')} <span className="text-primary font-medium">{t('landing.hero.subtitleEmphasis')}</span>.
                     </p>
                 </FadeIn>
 
@@ -88,7 +89,7 @@ export const Hero = () => {
                             className="group relative w-full sm:w-auto px-8 py-4 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold rounded-full transition-all duration-300 shadow-[0_0_40px_rgba(16,185,129,0.3)] hover:shadow-[0_0_60px_rgba(16,185,129,0.4)]"
                         >
                             <span className="flex items-center justify-center gap-2">
-                                Rejoindre la beta
+                                {t('landing.hero.cta')}
                                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                             </span>
                         </motion.button>
@@ -101,7 +102,7 @@ export const Hero = () => {
                         >
                             <span className="flex items-center justify-center gap-2">
                                 <ChevronDown className="w-4 h-4" />
-                                Comment ça marche ?
+                                {t('landing.hero.ctaSecondary')}
                             </span>
                         </motion.button>
                     </div>
@@ -132,7 +133,7 @@ export const Hero = () => {
                                 {/* Tape effect */}
                                 <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-10 h-4 bg-white/40 rounded-sm" />
                                 <p className="text-base font-semibold text-emerald-950 whitespace-nowrap" style={{ fontFamily: "'Caveat', cursive", fontSize: '18px' }}>
-                                    Plus court qu'une réunion 😉
+                                    {t('landing.hero.postit')}
                                 </p>
                             </div>
                         </motion.div>

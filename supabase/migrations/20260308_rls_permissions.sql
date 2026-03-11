@@ -1,7 +1,19 @@
 -- ============================================================
 -- RLS Policies - Permissions par rôle
 -- À exécuter dans Supabase > SQL Editor
+-- Idempotent : supprime les policies si elles existent déjà
 -- ============================================================
+
+DROP POLICY IF EXISTS "decisions_update_by_role" ON decisions;
+DROP POLICY IF EXISTS "decisions_delete_by_role" ON decisions;
+DROP POLICY IF EXISTS "poles_insert_by_role" ON poles;
+DROP POLICY IF EXISTS "poles_update_by_role" ON poles;
+DROP POLICY IF EXISTS "poles_delete_by_role" ON poles;
+DROP POLICY IF EXISTS "users_update_by_admin" ON users;
+DROP POLICY IF EXISTS "arguments_update_own" ON arguments;
+DROP POLICY IF EXISTS "arguments_delete_by_role" ON arguments;
+DROP POLICY IF EXISTS "votes_delete_own" ON votes;
+DROP POLICY IF EXISTS "audit_logs_select_by_role" ON audit_logs;
 
 -- -------------------------------------------------------
 -- DECISIONS : UPDATE (owner/admin de l'équipe OU créateur)
@@ -97,13 +109,20 @@ USING (user_id = auth.uid());
 
 -- -------------------------------------------------------
 -- AUDIT LOGS : SELECT restreint aux owner/admin
--- (Remplace la politique trop permissive existante si elle existe)
+-- (audit_logs n'a pas de team_id, on passe par decisions)
 -- -------------------------------------------------------
--- DROP POLICY IF EXISTS "audit_logs_select_all" ON audit_logs;
+DROP POLICY IF EXISTS "Users can view team audit logs" ON audit_logs;
 
 CREATE POLICY "audit_logs_select_by_role"
 ON audit_logs FOR SELECT
 USING (
-    team_id IN (SELECT team_id FROM users WHERE id = auth.uid())
-    AND (SELECT role FROM users WHERE id = auth.uid()) IN ('owner', 'admin')
+    (SELECT role FROM users WHERE id = auth.uid()) IN ('owner', 'admin')
+    AND (
+        decision_id IN (
+            SELECT id FROM decisions WHERE team_id IN (
+                SELECT team_id FROM users WHERE id = auth.uid()
+            )
+        )
+        OR user_id = auth.uid()
+    )
 );

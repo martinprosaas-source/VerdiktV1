@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { 
     LayoutDashboard, 
     Vote, 
@@ -16,31 +17,34 @@ import {
     Search,
     Menu,
     X,
-    Building2
+    Building2,
+    LogOut
 } from 'lucide-react';
 import { useTheme } from '../../ThemeProvider';
 import { useAuth, useNotifications } from '../../../hooks';
 import { CommandPalette } from '../CommandPalette';
 import { NotificationCenter } from '../NotificationCenter';
 import { Logo } from '../../Logo';
+import { LanguageToggle } from '../../LanguageToggle';
 
 const allNavigation = [
-    { name: 'Dashboard', href: '/app', icon: LayoutDashboard, shortcut: 'D', adminOnly: false },
-    { name: 'Décisions', href: '/app/decisions', icon: Vote, shortcut: null, adminOnly: false },
-    { name: 'Historique', href: '/app/history', icon: History, shortcut: null, adminOnly: false },
-    { name: 'Analytics', href: '/app/analytics', icon: BarChart3, shortcut: null, adminOnly: false },
-    { name: 'Équipe', href: '/app/team', icon: Users, shortcut: null, adminOnly: false },
-    { name: 'Pôles', href: '/app/poles', icon: Building2, shortcut: null, adminOnly: false },
-    { name: 'Audit Log', href: '/app/audit', icon: FileText, shortcut: null, adminOnly: true },
-    { name: 'Paramètres', href: '/app/settings', icon: Settings, shortcut: null, adminOnly: false },
+    { key: 'nav.dashboard', href: '/app', icon: LayoutDashboard, shortcut: 'D', adminOnly: false },
+    { key: 'nav.decisions', href: '/app/decisions', icon: Vote, shortcut: null, adminOnly: false },
+    { key: 'nav.history', href: '/app/history', icon: History, shortcut: null, adminOnly: false },
+    { key: 'nav.analytics', href: '/app/analytics', icon: BarChart3, shortcut: null, adminOnly: false },
+    { key: 'nav.team', href: '/app/team', icon: Users, shortcut: null, adminOnly: false },
+    { key: 'nav.poles', href: '/app/poles', icon: Building2, shortcut: null, adminOnly: false },
+    { key: 'nav.auditLog', href: '/app/audit', icon: FileText, shortcut: null, adminOnly: true },
+    { key: 'nav.settings', href: '/app/settings', icon: Settings, shortcut: null, adminOnly: false },
 ];
 
 export const Sidebar = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const { theme, setTheme } = useTheme();
-    const { profile, canManage } = useAuth();
+    const { profile, canManage, signOut } = useAuth();
     const { unreadCount: unreadNotifications } = useNotifications();
+    const { t } = useTranslation();
     const pendingVotes = 0;
 
     const navigation = allNavigation.filter(item => !item.adminOnly || canManage);
@@ -125,7 +129,7 @@ export const Sidebar = () => {
                     className="flex items-center gap-2 w-full px-3 py-2 bg-zinc-100 dark:bg-white/5 hover:bg-zinc-200 dark:hover:bg-white/10 rounded-lg transition-colors"
                 >
                     <Search className="w-4 h-4 text-tertiary" />
-                    <span className="text-sm text-tertiary flex-1 text-left">Rechercher...</span>
+                    <span className="text-sm text-tertiary flex-1 text-left">{t('common.search', 'Rechercher...')}</span>
                     <kbd className="hidden sm:block px-1.5 py-0.5 text-[10px] bg-white dark:bg-white/10 border border-zinc-200 dark:border-white/10 rounded text-tertiary">
                         ⌘K
                     </kbd>
@@ -139,7 +143,7 @@ export const Sidebar = () => {
                     className="flex items-center justify-center gap-1.5 w-full px-3 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-medium rounded-lg transition-colors"
                 >
                     <Plus className="w-4 h-4" />
-                    <span>Nouvelle décision</span>
+                    <span>{t('app.dashboard.newDecision')}</span>
                 </NavLink>
             </div>
 
@@ -148,10 +152,10 @@ export const Sidebar = () => {
                 <ul className="space-y-0.5">
                     {navigation.map((item) => {
                         const active = isActive(item.href);
-                        const showBadge = item.name === 'Décisions' && pendingVotes > 0;
+                        const showBadge = item.href === '/app/decisions' && pendingVotes > 0;
                         
                         return (
-                            <li key={item.name}>
+                            <li key={item.key}>
                                 <NavLink
                                     to={item.href}
                                     className={`
@@ -163,7 +167,7 @@ export const Sidebar = () => {
                                     `}
                                 >
                                     <item.icon className={`w-4 h-4 ${active ? 'text-emerald-500' : ''}`} />
-                                    <span className="flex-1">{item.name}</span>
+                                    <span className="flex-1">{t(item.key)}</span>
                                     {showBadge && (
                                         <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded">
                                             {pendingVotes}
@@ -193,7 +197,7 @@ export const Sidebar = () => {
                     }`}
                 >
                     <Bell className={`w-4 h-4 ${notificationsOpen ? 'text-emerald-500' : ''}`} />
-                    <span className="flex-1 text-left">Notifications</span>
+                    <span className="flex-1 text-left">{t('common.notifications', 'Notifications')}</span>
                     {unreadNotifications > 0 && (
                         <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-emerald-500 text-white rounded-full min-w-[18px] text-center">
                             {unreadNotifications}
@@ -209,15 +213,28 @@ export const Sidebar = () => {
                     {theme === 'light' ? (
                         <>
                             <Moon className="w-4 h-4" />
-                            <span>Mode sombre</span>
+                            <span>{t('common.darkMode', 'Mode sombre')}</span>
                         </>
                     ) : (
                         <>
                             <Sun className="w-4 h-4" />
-                            <span>Mode clair</span>
+                            <span>{t('common.lightMode', 'Mode clair')}</span>
                         </>
                     )}
                 </button>
+
+                {/* Language Toggle */}
+                <div className="flex items-center justify-between px-2 py-1">
+                    <LanguageToggle />
+                    <button
+                        onClick={signOut}
+                        className="flex items-center gap-1.5 px-2 py-1 text-xs text-tertiary hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                        title={t('app.sidebar.signOut')}
+                    >
+                        <LogOut className="w-3.5 h-3.5" />
+                        <span className="hidden xl:inline">{t('app.sidebar.signOut')}</span>
+                    </button>
+                </div>
 
                 {/* User */}
                 <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-zinc-50 dark:hover:bg-white/[0.03] transition-colors cursor-pointer">

@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { ModeToggle } from './ModeToggle';
 import { ArrowRight } from 'lucide-react';
 import { Logo } from './Logo';
+import { LanguageToggle } from './LanguageToggle';
 
 export const Navbar = () => {
     const [scrolled, setScrolled] = useState(false);
+    const { t } = useTranslation();
 
     useEffect(() => {
         const handleScroll = () => {
@@ -44,13 +47,14 @@ export const Navbar = () => {
 
                 {/* Actions */}
                 <div className="flex items-center gap-1">
+                    <LanguageToggle variant="landing" />
                     <ModeToggle />
                     
                     <Link 
                         to="/login"
                         className="hidden sm:block px-3 py-1.5 text-sm font-medium text-secondary hover:text-primary transition-colors rounded-full hover:bg-zinc-100 dark:hover:bg-white/5"
                     >
-                        Connexion
+                        {t('landing.nav.login')}
                     </Link>
                     
                     {/* CTA Button */}
@@ -63,7 +67,7 @@ export const Navbar = () => {
                             <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-emerald-600 transition-all duration-300" />
                             <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-teal-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                             
-                            <span className="relative">Rejoindre</span>
+                            <span className="relative">{t('landing.nav.join')}</span>
                             <ArrowRight className="relative w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
                         </motion.button>
                     </Link>
