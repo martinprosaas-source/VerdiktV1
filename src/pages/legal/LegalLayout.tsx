@@ -117,16 +117,19 @@ export const LegalLayout = ({ title, subtitle, lastUpdated, icon, children }: Le
                     </div>
 
                     <div className="
-                        prose prose-invert prose-zinc max-w-none
-                        prose-h2:text-lg prose-h2:font-semibold prose-h2:text-white
-                        prose-h2:mt-10 prose-h2:mb-3
-                        prose-h2:pb-2 prose-h2:border-b prose-h2:border-white/8
-                        prose-p:text-zinc-400 prose-p:leading-relaxed prose-p:text-sm
-                        prose-li:text-zinc-400 prose-li:text-sm
-                        prose-ul:space-y-1.5
-                        prose-a:text-emerald-400 prose-a:no-underline hover:prose-a:underline
-                        prose-strong:text-zinc-200 prose-strong:font-medium
-                        [&_h2:first-of-type]:mt-0
+                        prose prose-invert max-w-none
+                        prose-headings:font-semibold prose-headings:tracking-tight
+                        prose-h2:text-base prose-h2:text-white
+                        prose-h2:mt-10 prose-h2:mb-3 prose-h2:first:mt-0
+                        prose-p:text-zinc-400 prose-p:leading-relaxed prose-p:text-sm prose-p:my-2
+                        prose-li:text-zinc-400 prose-li:text-sm prose-li:my-0.5
+                        prose-ul:my-3 prose-ul:pl-4
+                        prose-a:text-emerald-400 prose-a:no-underline hover:prose-a:underline prose-a:font-normal
+                        prose-strong:text-zinc-200 prose-strong:font-semibold
+                        [&_h2]:flex [&_h2]:items-center [&_h2]:gap-2
+                        [&_h2]:before:content-[''] [&_h2]:before:w-1 [&_h2]:before:h-4
+                        [&_h2]:before:rounded-full [&_h2]:before:bg-emerald-500
+                        [&_h2]:before:shrink-0
                     ">
                         {children}
                     </div>
