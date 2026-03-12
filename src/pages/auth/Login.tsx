@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, Shield } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, Shield, ArrowLeft } from 'lucide-react';
 import { Logo, LogoIcon } from '../../components/Logo';
 import { supabase } from '../../lib/supabase';
 
@@ -55,9 +55,16 @@ export const Login = () => {
                     transition={{ duration: 0.5 }}
                     className="w-full max-w-md"
                 >
-                    {/* Logo */}
-                    <div className="mb-8">
+                    {/* Back button */}
+                    <div className="mb-8 flex items-center justify-between">
                         <Logo size="md" linkTo="/" />
+                        <Link
+                            to="/"
+                            className="flex items-center gap-1.5 text-sm text-tertiary hover:text-primary transition-colors"
+                        >
+                            <ArrowLeft className="w-4 h-4" />
+                            {t('common.back')}
+                        </Link>
                     </div>
 
                     {/* Beta badge */}
