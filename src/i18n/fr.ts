@@ -171,16 +171,6 @@ const fr = {
         faq: {
             label: '// FAQ',
             title: 'Questions fréquentes.',
-            q1: 'Est-ce que ça remplace nos réunions ?',
-            a1: 'Non, ça remplace les réunions inutiles. Celles qui tournent en rond pendant 2h sans jamais conclure. Les vraies discussions stratégiques restent humaines. Verdikt vous aide juste à arriver préparés.',
-            q2: 'Comment l\'IA génère-t-elle la synthèse ?',
-            a2: 'Elle analyse les arguments de chaque votant, identifie les points de consensus et de friction, et propose une recommandation basée sur la majorité pondérée. Tout est transparent et traçable dans le Decision Log.',
-            q3: 'Mes données sont-elles sécurisées ?',
-            a3: 'Oui. Hébergement EU (France), chiffrement end-to-end, conformité RGPD. Nous ne vendons jamais vos données et vous pouvez les exporter ou les supprimer à tout moment.',
-            q4: 'Combien de temps pour setup ?',
-            a4: '30 secondes. Créez un compte, invitez votre équipe via un lien, lancez votre première décision. Pas de formation requise, l\'interface est conçue pour être immédiatement intuitive.',
-            q5: 'Et si je veux annuler ?',
-            a5: 'Un clic depuis vos paramètres. Pas de frais cachés, pas de période d\'engagement, pas de dark patterns. Vos données vous appartiennent.',
             other: 'Autre question ?',
         },
         footer: {

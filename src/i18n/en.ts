@@ -171,16 +171,6 @@ const en = {
         faq: {
             label: '// FAQ',
             title: 'Frequently asked questions.',
-            q1: 'Does it replace our meetings?',
-            a1: 'No, it replaces useless meetings. The ones that go in circles for 2 hours without ever concluding. Real strategic discussions remain human. Verdikt just helps you arrive prepared.',
-            q2: 'How does AI generate the summary?',
-            a2: 'It analyzes each voter\'s arguments, identifies points of consensus and friction, and proposes a recommendation based on weighted majority. Everything is transparent and traceable in the Decision Log.',
-            q3: 'Is my data secure?',
-            a3: 'Yes. EU hosting (France), end-to-end encryption, GDPR compliance. We never sell your data and you can export or delete it at any time.',
-            q4: 'How long to set up?',
-            a4: '30 seconds. Create an account, invite your team via a link, launch your first decision. No training required — the interface is designed to be immediately intuitive.',
-            q5: 'What if I want to cancel?',
-            a5: 'One click from your settings. No hidden fees, no lock-in period, no dark patterns. Your data belongs to you.',
             other: 'Another question?',
         },
         footer: {
