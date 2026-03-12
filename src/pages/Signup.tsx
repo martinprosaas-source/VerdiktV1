@@ -253,7 +253,7 @@ export const Signup = () => {
                                     Accès Beta réservé
                                 </p>
                                 <p className="text-xs text-tertiary">
-                                    Cette page est réservée aux utilisateurs beta. Si vous n'avez pas d'accès, contactez hello@verdikt.ai
+                                    Cette page est réservée aux utilisateurs beta. Si vous n'avez pas d'accès, contactez contact@verdikt.dev
                                 </p>
                             </div>
                         </div>

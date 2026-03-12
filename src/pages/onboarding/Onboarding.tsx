@@ -233,7 +233,7 @@ const OnboardingContent = () => {
                     {/* Help text */}
                     <div className="text-sm text-white/40">
                         Besoin d'aide ?{' '}
-                        <a href="mailto:hello@verdikt.ai" className="text-emerald-400 hover:underline">
+                        <a href="mailto:contact@verdikt.dev" className="text-emerald-400 hover:underline">
                             Contactez-nous
                         </a>
                     </div>
