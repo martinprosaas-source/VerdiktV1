@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { ModeToggle } from './ModeToggle';
@@ -10,6 +10,22 @@ import { LanguageToggle } from './LanguageToggle';
 export const Navbar = () => {
     const [scrolled, setScrolled] = useState(false);
     const { t } = useTranslation();
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    const handleScrollToPricing = () => {
+        const scrollTo = () => {
+            const el = document.getElementById('pricing');
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+        };
+
+        if (location.pathname === '/') {
+            scrollTo();
+        } else {
+            navigate('/');
+            setTimeout(scrollTo, 100);
+        }
+    };
 
     useEffect(() => {
         const handleScroll = () => {
@@ -58,19 +74,18 @@ export const Navbar = () => {
                     </Link>
                     
                     {/* CTA Button */}
-                    <Link to="/signup">
-                        <motion.button 
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            className="group relative flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-white rounded-full overflow-hidden"
-                        >
-                            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-emerald-600 transition-all duration-300" />
-                            <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-teal-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                            
-                            <span className="relative">{t('landing.nav.join')}</span>
-                            <ArrowRight className="relative w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
-                        </motion.button>
-                    </Link>
+                    <motion.button 
+                        onClick={handleScrollToPricing}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="group relative flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-white rounded-full overflow-hidden"
+                    >
+                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-emerald-600 transition-all duration-300" />
+                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-teal-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        
+                        <span className="relative">{t('landing.nav.join')}</span>
+                        <ArrowRight className="relative w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                    </motion.button>
                 </div>
             </motion.div>
         </motion.nav>

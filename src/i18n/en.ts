@@ -279,6 +279,7 @@ const en = {
             googleCta: 'Continue with Google',
             noAccount: 'No account yet?',
             createAccount: 'Create an account',
+            joinBeta: 'Join the beta',
             help: 'Having trouble signing in?',
             helpContact: 'Contact us at support@verdikt.ai',
             tagline1: 'Stop debating.',
