@@ -36,7 +36,7 @@ export const Logo = ({
             <img 
                 src={logoSrc} 
                 alt="Verdikt" 
-                className={`${sizeConfig.logo} object-contain`}
+                className={`${sizeConfig.logo} object-contain object-left`}
             />
         </motion.div>
     );
