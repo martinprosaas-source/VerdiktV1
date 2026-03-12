@@ -107,7 +107,7 @@ export const Pricing = () => {
                                         )}
                                         <div className="flex items-baseline gap-1">
                                             <span className="text-4xl sm:text-5xl font-bold text-primary">{plan.price}</span>
-                                            <span className="text-base text-tertiary">{plan.period}</span>
+                                            <span className="text-base text-tertiary">{plan.isFree ? t('landing.pricing.free.period') : t('landing.pricing.period')}</span>
                                         </div>
                                         {plan.hasMonthly && (
                                             <p className="text-sm text-secondary mt-1">

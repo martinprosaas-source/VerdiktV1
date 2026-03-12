@@ -125,6 +125,7 @@ const fr = {
             title1: '75 places',
             title2: 'Prix garanti à vie.',
             subtitle: 'Slack 7€/user, Notion 8€/user, Monday 9€/user... Verdikt à 3,30€.',
+            period: '€/an',
             free: {
                 name: 'Free',
                 members: '5 membres',
@@ -132,6 +133,7 @@ const fr = {
                 desc: '5 décisions/mois',
                 cta: 'Bientôt accessible',
                 forever: 'Pour toujours',
+                period: '€',
                 f1: 'Décisions limitées',
                 f2: 'Synthèse IA',
                 f3: 'Decision Log',
