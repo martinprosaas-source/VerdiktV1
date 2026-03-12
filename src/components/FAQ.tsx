@@ -257,7 +257,7 @@ export const FAQ = () => {
     const activeAnswer = faqs[openIndex ?? 0]?.answer;
 
     return (
-        <Section className="py-28 sm:py-40 bg-card/50 dark:bg-[#0a0a0a] relative overflow-hidden transition-colors duration-300">
+        <Section id="faq" className="py-28 sm:py-40 bg-card/50 dark:bg-[#0a0a0a] relative overflow-hidden transition-colors duration-300">
             <div className="max-w-6xl mx-auto px-4 sm:px-6">
                 {/* Header */}
                 <FadeIn className="mb-16 sm:mb-20">
