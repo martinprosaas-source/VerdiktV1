@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Section, FadeIn } from './ui/Section';
-import { Plus, Minus } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 
@@ -254,10 +254,11 @@ export const FAQ = () => {
     const { t, i18n } = useTranslation();
 
     const faqs = i18n.language.startsWith('fr') ? faqsFR : faqsEN;
+    const activeAnswer = faqs[openIndex ?? 0]?.answer;
 
     return (
         <Section className="py-28 sm:py-40 bg-card/50 dark:bg-[#0a0a0a] relative overflow-hidden transition-colors duration-300">
-            <div className="max-w-4xl mx-auto px-4 sm:px-6">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6">
                 {/* Header */}
                 <FadeIn className="mb-16 sm:mb-20">
                     <p className="text-emerald-500 font-mono text-sm tracking-wider mb-4">{t('landing.faq.label')}</p>
@@ -268,65 +269,74 @@ export const FAQ = () => {
                     </h2>
                 </FadeIn>
 
-                {/* FAQ items */}
-                <div className="space-y-2">
-                    {faqs.map((faq, index) => (
-                        <FadeIn key={index} delay={0.04 * index}>
-                            <motion.div
-                                className={`
-                                    rounded-2xl overflow-hidden transition-all duration-300
-                                    ${openIndex === index
-                                        ? 'bg-emerald-500/5 border border-emerald-500/20'
-                                        : 'bg-card/50 border border-zinc-200 dark:border-white/5 hover:border-zinc-300 dark:hover:border-white/10'
-                                    }
-                                `}
-                            >
-                                <button
-                                    onClick={() => setOpenIndex(openIndex === index ? null : index)}
-                                    className="w-full p-6 sm:p-8 flex items-center justify-between gap-4 text-left"
-                                >
-                                    <span className={`text-base sm:text-lg font-medium transition-colors ${openIndex === index ? 'text-emerald-500' : 'text-primary'}`}>
-                                        {faq.question}
-                                    </span>
-                                    <div className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition-colors ${openIndex === index ? 'bg-emerald-500 text-black' : 'bg-zinc-100 dark:bg-white/5 text-tertiary'}`}>
-                                        {openIndex === index ? (
-                                            <Minus className="w-4 h-4" />
-                                        ) : (
-                                            <Plus className="w-4 h-4" />
-                                        )}
-                                    </div>
-                                </button>
+                {/* 2-column layout */}
+                <div className="flex flex-col lg:flex-row gap-4 lg:gap-8 items-start">
 
-                                <AnimatePresence>
-                                    {openIndex === index && (
-                                        <motion.div
-                                            initial={{ height: 0, opacity: 0 }}
-                                            animate={{ height: 'auto', opacity: 1 }}
-                                            exit={{ height: 0, opacity: 0 }}
-                                            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                                        >
-                                            <div className="px-6 sm:px-8 pb-6 sm:pb-8 text-sm sm:text-base text-secondary leading-relaxed [&_strong]:text-zinc-200 [&_strong]:font-semibold">
-                                                {faq.answer}
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </motion.div>
+                    {/* Left — question list */}
+                    <div className="w-full lg:w-[44%] flex flex-col gap-1 lg:sticky lg:top-24">
+                        {faqs.map((faq, index) => {
+                            const active = openIndex === index;
+                            return (
+                                <FadeIn key={index} delay={0.03 * index}>
+                                    <button
+                                        onClick={() => setOpenIndex(index)}
+                                        className={`w-full text-left flex items-center justify-between gap-3 px-5 py-4 rounded-xl transition-all duration-200 group
+                                            ${active
+                                                ? 'bg-emerald-500/8 border border-emerald-500/25 text-white'
+                                                : 'border border-transparent hover:border-white/8 hover:bg-white/3 text-zinc-400 hover:text-zinc-200'
+                                            }`}
+                                    >
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <span className={`text-xs font-mono shrink-0 transition-colors ${active ? 'text-emerald-500' : 'text-zinc-600 group-hover:text-zinc-500'}`}>
+                                                {String(index + 1).padStart(2, '0')}
+                                            </span>
+                                            <span className="text-sm font-medium leading-snug truncate">{faq.question}</span>
+                                        </div>
+                                        <ArrowRight className={`w-4 h-4 shrink-0 transition-all duration-200 ${active ? 'text-emerald-500 translate-x-0.5' : 'text-zinc-600 opacity-0 group-hover:opacity-100'}`} />
+                                    </button>
+                                </FadeIn>
+                            );
+                        })}
+
+                        {/* Contact */}
+                        <FadeIn delay={0.3}>
+                            <p className="text-xs text-zinc-600 px-5 pt-4 border-t border-white/5 mt-2">
+                                {t('landing.faq.other')}{' '}
+                                <a href="mailto:contact@verdikt.dev" className="text-emerald-500 hover:underline">
+                                    contact@verdikt.dev
+                                </a>
+                            </p>
                         </FadeIn>
-                    ))}
-                </div>
-
-                {/* Contact CTA */}
-                <FadeIn delay={0.3}>
-                    <div className="mt-12 text-center">
-                        <p className="text-tertiary">
-                            {t('landing.faq.other')}{' '}
-                            <a href="mailto:contact@verdikt.dev" className="text-emerald-500 hover:underline">
-                                contact@verdikt.dev
-                            </a>
-                        </p>
                     </div>
-                </FadeIn>
+
+                    {/* Right — active answer panel */}
+                    <div className="w-full lg:flex-1 lg:sticky lg:top-24">
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={openIndex}
+                                initial={{ opacity: 0, y: 8 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -8 }}
+                                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                                className="rounded-2xl bg-card/60 dark:bg-white/3 border border-zinc-200 dark:border-white/8 p-8 sm:p-10 min-h-[260px]"
+                            >
+                                {/* Question echo */}
+                                <p className="text-xs font-mono text-emerald-500 mb-4 tracking-wider">
+                                    {String((openIndex ?? 0) + 1).padStart(2, '0')} — {faqs[openIndex ?? 0]?.question}
+                                </p>
+
+                                {/* Answer */}
+                                <div className="text-sm sm:text-base text-secondary leading-relaxed
+                                    [&_strong]:text-zinc-200 [&_strong]:font-semibold
+                                    [&_p]:text-zinc-400 [&_p:not(:last-child)]:mb-3
+                                    [&_ul]:space-y-2
+                                ">
+                                    {activeAnswer}
+                                </div>
+                            </motion.div>
+                        </AnimatePresence>
+                    </div>
+                </div>
             </div>
         </Section>
     );
