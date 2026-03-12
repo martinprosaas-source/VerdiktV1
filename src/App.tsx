@@ -6,6 +6,13 @@ import { AuthGuard } from './components/AuthGuard';
 // Landing page
 import { Landing } from './pages/Landing';
 
+// Legal pages
+import { Mentions } from './pages/legal/Mentions';
+import { Terms } from './pages/legal/Terms';
+import { Privacy } from './pages/legal/Privacy';
+import { Rgpd } from './pages/legal/Rgpd';
+import { CookieBanner } from './components/CookieBanner';
+
 // Auth pages
 import { Login } from './pages/auth/Login';
 import { Register } from './pages/auth/Register';
@@ -31,6 +38,7 @@ function App() {
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
       <BetaModalProvider>
         <BrowserRouter>
+          <CookieBanner />
           <Routes>
             {/* Landing page - with auto-redirect logic */}
             <Route path="/" element={
@@ -70,6 +78,12 @@ function App() {
               </AuthGuard>
             } />
             
+            {/* Legal pages - public */}
+            <Route path="/mentions-legales" element={<Mentions />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/rgpd" element={<Rgpd />} />
+
             {/* App routes - protected, requires auth and onboarding */}
             <Route path="/app" element={
               <AuthGuard requireAuth>

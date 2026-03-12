@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { Logo } from './Logo';
 import { useTranslation } from 'react-i18next';
 
@@ -19,10 +20,10 @@ export const Footer = () => {
             { label: t('landing.footer.contact'), href: '#' },
         ],
         legal: [
-            { label: t('landing.footer.privacy'), href: '#' },
-            { label: t('landing.footer.terms'), href: '#' },
-            { label: t('landing.footer.mentions'), href: '#' },
-            { label: t('landing.footer.rgpd'), href: '#' },
+            { label: t('landing.footer.privacy'), href: '/privacy' },
+            { label: t('landing.footer.terms'), href: '/terms' },
+            { label: t('landing.footer.mentions'), href: '/mentions-legales' },
+            { label: t('landing.footer.rgpd'), href: '/rgpd' },
         ],
     };
     return (
@@ -110,9 +111,9 @@ export const Footer = () => {
                             <ul className="space-y-3">
                                 {footerLinks.legal.map((link) => (
                                     <li key={link.label}>
-                                        <a href={link.href} className="text-sm text-tertiary hover:text-primary transition-colors">
+                                        <Link to={link.href} className="text-sm text-tertiary hover:text-primary transition-colors">
                                             {link.label}
-                                        </a>
+                                        </Link>
                                     </li>
                                 ))}
                             </ul>
