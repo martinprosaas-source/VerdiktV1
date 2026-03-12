@@ -1,7 +1,13 @@
+import { FileText } from 'lucide-react';
 import { LegalLayout } from './LegalLayout';
 
 export const Terms = () => (
-    <LegalLayout title="Conditions Générales d'Utilisation" lastUpdated="Mars 2026">
+    <LegalLayout
+        title="Conditions Générales d'Utilisation"
+        subtitle="En utilisant Verdikt, vous acceptez les présentes conditions. Prenez le temps de les lire attentivement."
+        lastUpdated="Mars 2026"
+        icon={<FileText className="w-6 h-6" />}
+    >
         <h2>1. Acceptation</h2>
         <p>En accédant à verdikt.dev, vous acceptez les présentes Conditions Générales d'Utilisation (CGU). Si vous ne les acceptez pas, veuillez ne pas utiliser le service.</p>
 

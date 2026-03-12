@@ -1,7 +1,13 @@
+import { Lock } from 'lucide-react';
 import { LegalLayout } from './LegalLayout';
 
 export const Privacy = () => (
-    <LegalLayout title="Politique de confidentialité" lastUpdated="Mars 2026">
+    <LegalLayout
+        title="Politique de confidentialité"
+        subtitle="Nous traitons vos données avec soin. Cette page détaille quelles données nous collectons, pourquoi, et comment vous pouvez les contrôler."
+        lastUpdated="Mars 2026"
+        icon={<Lock className="w-6 h-6" />}
+    >
         <h2>1. Responsable du traitement</h2>
         <p>M&amp;A Labs LLC, 312 W 2nd St, Unit #A9362, Casper, WY 82601, USA — <a href="mailto:contact@verdikt.dev">contact@verdikt.dev</a></p>
 

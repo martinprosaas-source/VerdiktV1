@@ -1,7 +1,13 @@
+import { Shield } from 'lucide-react';
 import { LegalLayout } from './LegalLayout';
 
 export const Rgpd = () => (
-    <LegalLayout title="Conformité RGPD" lastUpdated="Mars 2026">
+    <LegalLayout
+        title="Conformité RGPD"
+        subtitle="Notre approche de la protection des données personnelles, conforme au Règlement UE 2016/679. Transparence totale sur vos droits."
+        lastUpdated="Mars 2026"
+        icon={<Shield className="w-6 h-6" />}
+    >
         <p>Verdikt prend la protection de vos données personnelles très au sérieux. Cette page détaille notre approche de conformité au Règlement Général sur la Protection des Données (Règlement UE 2016/679).</p>
 
         <h2>1. Principes appliqués</h2>
