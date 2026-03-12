@@ -31,7 +31,7 @@ export const Logo = ({
     const content = (
         <motion.div 
             whileHover={{ scale: 1.02 }}
-            className={`flex items-center justify-center ${className}`}
+            className={`flex items-center ${className}`}
         >
             <img 
                 src={logoSrc} 
