@@ -5,6 +5,7 @@ import { HowItWorks } from '../components/HowItWorks';
 import { Features } from '../components/Features';
 import { ForWho } from '../components/ForWho';
 import { Testimonials } from '../components/Testimonials';
+import { Integrations } from '../components/Integrations';
 import { Pricing } from '../components/Pricing';
 import { FAQ } from '../components/FAQ';
 import { AskAI } from '../components/AskAI';
@@ -29,7 +30,9 @@ export const Landing = () => {
                 <ForWho />
                 {/* 6. Témoignages - Preuve sociale */}
                 <Testimonials />
-                {/* 7. Pricing - Les offres */}
+                {/* 7. Intégrations */}
+                <Integrations />
+                {/* 8. Pricing - Les offres */}
                 <Pricing />
                 {/* 8. FAQ - Lever les objections */}
                 <FAQ />
