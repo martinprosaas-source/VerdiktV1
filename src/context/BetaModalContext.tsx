@@ -2,13 +2,10 @@ import { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
 import { BetaModal } from '../components/BetaModal';
 
-export type SelectedPlan = 'Pro' | 'Business' | null;
-
 interface BetaModalContextType {
-    openBetaModal: (plan?: SelectedPlan) => void;
+    openBetaModal: () => void;
     closeBetaModal: () => void;
     isOpen: boolean;
-    selectedPlan: SelectedPlan;
 }
 
 const BetaModalContext = createContext<BetaModalContextType | undefined>(undefined);
@@ -27,21 +24,14 @@ interface BetaModalProviderProps {
 
 export const BetaModalProvider = ({ children }: BetaModalProviderProps) => {
     const [isOpen, setIsOpen] = useState(false);
-    const [selectedPlan, setSelectedPlan] = useState<SelectedPlan>(null);
 
-    const openBetaModal = (plan?: SelectedPlan) => {
-        setSelectedPlan(plan || null);
-        setIsOpen(true);
-    };
-    const closeBetaModal = () => {
-        setIsOpen(false);
-        setSelectedPlan(null);
-    };
+    const openBetaModal = () => setIsOpen(true);
+    const closeBetaModal = () => setIsOpen(false);
 
     return (
-        <BetaModalContext.Provider value={{ openBetaModal, closeBetaModal, isOpen, selectedPlan }}>
+        <BetaModalContext.Provider value={{ openBetaModal, closeBetaModal, isOpen }}>
             {children}
-            <BetaModal isOpen={isOpen} onClose={closeBetaModal} selectedPlan={selectedPlan} />
+            <BetaModal isOpen={isOpen} onClose={closeBetaModal} />
         </BetaModalContext.Provider>
     );
 };

@@ -102,29 +102,26 @@ const faqsFR: FAQItem[] = [
         answer: (
             <div className="space-y-3">
                 <p>On est en beta. <strong>75 places disponibles</strong> à tarif Founding Member :</p>
-                <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-xl bg-white/5 border border-white/8 p-4">
-                        <p className="text-white font-semibold text-sm mb-1">Pro</p>
-                        <p className="text-emerald-400 font-bold text-xl">790€<span className="text-sm font-normal text-zinc-400">/an</span></p>
-                        <p className="text-xs text-zinc-500 mt-1">Jusqu'à 20 utilisateurs</p>
+                <div className="rounded-xl bg-emerald-500/5 border border-emerald-500/20 p-4">
+                    <div className="flex items-center justify-between mb-2">
+                        <p className="text-white font-semibold text-sm">Founding Member</p>
+                        <span className="text-xs text-amber-400 font-bold">-35%</span>
                     </div>
-                    <div className="rounded-xl bg-emerald-500/5 border border-emerald-500/20 p-4">
-                        <p className="text-white font-semibold text-sm mb-1">Business</p>
-                        <p className="text-emerald-400 font-bold text-xl">1 990€<span className="text-sm font-normal text-zinc-400">/an</span></p>
-                        <p className="text-xs text-zinc-500 mt-1">Jusqu'à 50 utilisateurs</p>
-                    </div>
+                    <p className="text-emerald-400 font-bold text-2xl">3,75€<span className="text-sm font-normal text-zinc-400"> HT / user / mois</span></p>
+                    <p className="text-xs text-amber-400 font-medium mt-1.5">Facturé annuellement — soit 45€ HT / user / an</p>
+                    <p className="text-xs text-zinc-500 mt-1">Plan gratuit jusqu'à 5 membres</p>
                 </div>
-                <p className="text-sm text-zinc-400">C'est <strong>-33%</strong> par rapport au prix de lancement prévu. Et ce tarif est <strong>garanti à vie</strong> pour les membres beta.</p>
+                <p className="text-sm text-zinc-400">Après la beta, le prix passe à <strong className="text-zinc-300">5,75€ HT / user / mois</strong> en facturation mensuelle. Ton tarif Founding Member est <strong className="text-zinc-300">garanti à vie</strong>.</p>
             </div>
         ),
     },
     {
         question: "Et si je veux annuler ?",
         answer: (
-            <p>
-                Tu annules quand tu veux. <strong>Pas d'engagement long terme, pas de piège, pas de "appelez notre service client".</strong>{' '}
-                Si Verdikt t'aide pas, on veut pas te garder de force.
-            </p>
+            <div className="space-y-2">
+                <p>La beta est facturée annuellement. <strong>Pendant ton année beta, le tarif est garanti et l'accès complet est assuré.</strong></p>
+                <p>Après la beta, tu passes automatiquement en <strong>facturation mensuelle</strong> à ton tarif garanti — et tu peux résilier à tout moment, sans engagement, sans piège, sans "appelez notre service client".</p>
+            </div>
         ),
     },
 ];
@@ -222,29 +219,26 @@ const faqsEN: FAQItem[] = [
         answer: (
             <div className="space-y-3">
                 <p>We're in beta. <strong>75 spots available</strong> at Founding Member pricing:</p>
-                <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-xl bg-white/5 border border-white/8 p-4">
-                        <p className="text-white font-semibold text-sm mb-1">Pro</p>
-                        <p className="text-emerald-400 font-bold text-xl">€790<span className="text-sm font-normal text-zinc-400">/year</span></p>
-                        <p className="text-xs text-zinc-500 mt-1">Up to 20 users</p>
+                <div className="rounded-xl bg-emerald-500/5 border border-emerald-500/20 p-4">
+                    <div className="flex items-center justify-between mb-2">
+                        <p className="text-white font-semibold text-sm">Founding Member</p>
+                        <span className="text-xs text-amber-400 font-bold">-35%</span>
                     </div>
-                    <div className="rounded-xl bg-emerald-500/5 border border-emerald-500/20 p-4">
-                        <p className="text-white font-semibold text-sm mb-1">Business</p>
-                        <p className="text-emerald-400 font-bold text-xl">€1,990<span className="text-sm font-normal text-zinc-400">/year</span></p>
-                        <p className="text-xs text-zinc-500 mt-1">Up to 50 users</p>
-                    </div>
+                    <p className="text-emerald-400 font-bold text-2xl">€3.75<span className="text-sm font-normal text-zinc-400"> excl. VAT / user / mo</span></p>
+                    <p className="text-xs text-amber-400 font-medium mt-1.5">Billed annually — i.e. €45 excl. VAT / user / yr</p>
+                    <p className="text-xs text-zinc-500 mt-1">Free plan up to 5 members</p>
                 </div>
-                <p className="text-sm text-zinc-400">That's <strong>-33%</strong> off our planned launch price. And this price is <strong>locked for life</strong> for beta members.</p>
+                <p className="text-sm text-zinc-400">After beta, price moves to <strong className="text-zinc-300">€5.75 excl. VAT / user / mo</strong> on monthly billing. Your Founding Member price is <strong className="text-zinc-300">locked for life</strong>.</p>
             </div>
         ),
     },
     {
         question: "What if I want to cancel?",
         answer: (
-            <p>
-                You cancel whenever you want. <strong>No long-term commitment, no tricks, no "call our customer service".</strong>{' '}
-                If Verdikt doesn't help you, we don't want to keep you.
-            </p>
+            <div className="space-y-2">
+                <p>Beta is billed annually. <strong>During your beta year, your price is locked and full access is guaranteed.</strong></p>
+                <p>After beta, you automatically move to <strong>monthly billing</strong> at your guaranteed rate — cancel anytime, no commitment, no tricks, no "call our customer service".</p>
+            </div>
         ),
     },
 ];

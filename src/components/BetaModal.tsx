@@ -5,12 +5,10 @@ import { X, CheckCircle2, Loader2, ChevronDown, Mail, MessageCircle, Copy, Check
 import { Button } from './ui/Button';
 import { LogoIcon } from './Logo';
 import { supabase } from '../lib/supabase';
-import type { SelectedPlan } from '../context/BetaModalContext';
 
 interface BetaModalProps {
     isOpen: boolean;
     onClose: () => void;
-    selectedPlan?: SelectedPlan;
 }
 
 // Confetti component for success animation
@@ -56,14 +54,13 @@ const Confetti = () => {
     );
 };
 
-export const BetaModal = ({ isOpen, onClose, selectedPlan }: BetaModalProps) => {
+export const BetaModal = ({ isOpen, onClose }: BetaModalProps) => {
     const { t } = useTranslation();
     const [firstName, setFirstName] = useState('');
     const [email, setEmail] = useState('');
     const [company, setCompany] = useState('');
     const [website, setWebsite] = useState('');
     const [teamSize, setTeamSize] = useState('');
-    const [plan, setPlan] = useState<string>('');
     const [contactPreference, setContactPreference] = useState<'email' | 'whatsapp'>('email');
     const [phone, setPhone] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -96,7 +93,7 @@ export const BetaModal = ({ isOpen, onClose, selectedPlan }: BetaModalProps) => 
         window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`, '_blank');
     };
 
-    // Reset state when modal opens and set selected plan
+    // Reset state when modal opens
     useEffect(() => {
         if (isOpen) {
             setFirstName('');
@@ -104,13 +101,12 @@ export const BetaModal = ({ isOpen, onClose, selectedPlan }: BetaModalProps) => 
             setCompany('');
             setWebsite('');
             setTeamSize('');
-            setPlan(selectedPlan || '');
             setContactPreference('email');
             setPhone('');
             setIsSuccess(false);
             setError('');
         }
-    }, [isOpen, selectedPlan]);
+    }, [isOpen]);
 
     // Close on Escape key
     useEffect(() => {
@@ -147,10 +143,6 @@ export const BetaModal = ({ isOpen, onClose, selectedPlan }: BetaModalProps) => 
             setError(t('landing.betaModal.errors.teamSize'));
             return;
         }
-        if (!plan) {
-            setError(t('landing.betaModal.errors.plan'));
-            return;
-        }
         if (contactPreference === 'whatsapp' && !phone.trim()) {
             setError(t('landing.betaModal.errors.whatsapp'));
             return;
@@ -165,7 +157,7 @@ export const BetaModal = ({ isOpen, onClose, selectedPlan }: BetaModalProps) => 
                 company: company.trim(),
                 website: website.trim() || null,
                 team_size: teamSize,
-                plan,
+                plan: 'Founding Member',
                 contact_preference: contactPreference,
                 phone: contactPreference === 'whatsapp' ? phone.trim() : null,
                 referral_code: email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, ''),
@@ -188,7 +180,6 @@ export const BetaModal = ({ isOpen, onClose, selectedPlan }: BetaModalProps) => 
                     data: {
                         email: email.trim().toLowerCase(),
                         firstName: firstName.trim(),
-                        plan,
                     },
                 },
             }).catch(() => {});
@@ -337,45 +328,25 @@ export const BetaModal = ({ isOpen, onClose, selectedPlan }: BetaModalProps) => 
                                                 </div>
                                             </div>
 
-                                            {/* Row 3: Taille équipe + Plan */}
-                                            <div className="grid grid-cols-2 gap-3">
-                                                <div>
-                                                    <label htmlFor="teamSize" className="block text-xs font-medium text-secondary mb-1.5">
-                                                        {t('landing.betaModal.teamSize')} <span className="text-emerald-400">*</span>
-                                                    </label>
-                                                    <div className="relative">
-                                                        <select
-                                                            id="teamSize"
-                                                            value={teamSize}
-                                                            onChange={(e) => setTeamSize(e.target.value)}
-                                                            className="w-full px-3 py-2.5 bg-background border border-border-subtle/30 rounded-lg text-sm text-primary focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all appearance-none cursor-pointer"
-                                                        >
-                                                            <option value="" disabled>{t('landing.betaModal.placeholders.select')}</option>
-                                                            <option value="5-15">{t('landing.betaModal.sizes.s1')}</option>
-                                                            <option value="15-30">{t('landing.betaModal.sizes.s2')}</option>
-                                                            <option value="30-50">{t('landing.betaModal.sizes.s3')}</option>
-                                                            <option value="50+">{t('landing.betaModal.sizes.s4')}</option>
-                                                        </select>
-                                                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tertiary pointer-events-none" />
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <label htmlFor="plan" className="block text-xs font-medium text-secondary mb-1.5">
-                                                        {t('landing.betaModal.plan')} <span className="text-emerald-400">*</span>
-                                                    </label>
-                                                    <div className="relative">
-                                                        <select
-                                                            id="plan"
-                                                            value={plan}
-                                                            onChange={(e) => setPlan(e.target.value)}
-                                                            className="w-full px-3 py-2.5 bg-background border border-border-subtle/30 rounded-lg text-sm text-primary focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all appearance-none cursor-pointer"
-                                                        >
-                                                            <option value="" disabled>{t('landing.betaModal.placeholders.select')}</option>
-                                                            <option value="Pro">{t('landing.betaModal.plans.pro')}</option>
-                                                            <option value="Business">{t('landing.betaModal.plans.business')}</option>
-                                                        </select>
-                                                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tertiary pointer-events-none" />
-                                                    </div>
+                                            {/* Row 3: Taille équipe */}
+                                            <div>
+                                                <label htmlFor="teamSize" className="block text-xs font-medium text-secondary mb-1.5">
+                                                    {t('landing.betaModal.teamSize')} <span className="text-emerald-400">*</span>
+                                                </label>
+                                                <div className="relative">
+                                                    <select
+                                                        id="teamSize"
+                                                        value={teamSize}
+                                                        onChange={(e) => setTeamSize(e.target.value)}
+                                                        className="w-full px-3 py-2.5 bg-background border border-border-subtle/30 rounded-lg text-sm text-primary focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all appearance-none cursor-pointer"
+                                                    >
+                                                        <option value="" disabled>{t('landing.betaModal.placeholders.select')}</option>
+                                                        <option value="6-15">{t('landing.betaModal.sizes.s1')}</option>
+                                                        <option value="15-30">{t('landing.betaModal.sizes.s2')}</option>
+                                                        <option value="30-50">{t('landing.betaModal.sizes.s3')}</option>
+                                                        <option value="50+">{t('landing.betaModal.sizes.s4')}</option>
+                                                    </select>
+                                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tertiary pointer-events-none" />
                                                 </div>
                                             </div>
 
@@ -532,7 +503,7 @@ export const BetaModal = ({ isOpen, onClose, selectedPlan }: BetaModalProps) => 
                                                 </span>
                                             </div>
                                             <p className="text-xs text-tertiary mt-1">
-                                                {t('landing.pricing.g2')} • {plan === 'Pro' ? '790€/an' : '1 990€/an'}
+                                                {t('landing.pricing.g2')} • {t('landing.pricing.paid.priceTag')}
                                             </p>
                                         </motion.div>
 

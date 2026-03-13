@@ -86,8 +86,7 @@ function welcomeHtml(p: { firstName: string; teamName: string; appUrl: string })
 </html>`;
 }
 
-function betaConfirmationHtml(p: { firstName: string; plan: string }) {
-    const planLabel = p.plan === 'Pro' ? 'Pro — 790 €/an' : 'Business — 1 990 €/an';
+function betaConfirmationHtml(p: { firstName: string }) {
     return `<!DOCTYPE html>
 <html lang="fr">
 <head>${emailHead('Demande Bêta Verdikt')}</head>
@@ -108,11 +107,11 @@ function betaConfirmationHtml(p: { firstName: string; plan: string }) {
             Votre demande d'accès bêta a bien été enregistrée. Nous examinerons votre dossier et reviendrons vers vous sous <strong class="text-main" style="color:#18181b;">24 heures</strong>.
           </p>
 
-          <table width="100%" cellpadding="0" cellspacing="0" role="presentation" class="highlight-box" style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:28px;">
+          <table width="100%" cellpadding="0" cellspacing="0" role="presentation" class="green-box" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;margin-bottom:28px;">
             <tr><td style="padding:18px 20px;">
-              <p class="text-light" style="margin:0 0 4px;font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.6px;font-weight:600;">Plan sélectionné</p>
-              <p class="text-main" style="margin:0;font-size:16px;font-weight:700;color:#18181b;">${planLabel}</p>
-              <p style="margin:4px 0 0;font-size:13px;color:#10b981;font-weight:500;">Prix Founding Member garanti à vie</p>
+              <p style="margin:0 0 4px;font-size:11px;color:#166534;text-transform:uppercase;letter-spacing:0.6px;font-weight:600;">Votre tarif Founding Member</p>
+              <p style="margin:0;font-size:20px;font-weight:700;color:#18181b;">3,75€ HT / user / mois</p>
+              <p style="margin:6px 0 0;font-size:13px;color:#16a34a;font-weight:500;">Prix garanti à vie — même après la beta ✓</p>
             </td></tr>
           </table>
 
@@ -162,7 +161,7 @@ serve(async (req) => {
 
         // ── beta_confirmation: public endpoint (no auth required) ─────────────
         if (type === 'beta_confirmation') {
-            const { email, firstName, plan } = data || {};
+            const { email, firstName } = data || {};
             if (!email || !firstName) return json({ error: 'missing_params' }, 400);
 
             const res = await fetch('https://api.resend.com/emails', {
@@ -175,7 +174,7 @@ serve(async (req) => {
                     from: FROM,
                     to: [email],
                     subject: `Demande reçue, ${firstName} 🎉`,
-                    html: betaConfirmationHtml({ firstName, plan: plan || 'Pro' }),
+                    html: betaConfirmationHtml({ firstName }),
                 }),
             });
 
