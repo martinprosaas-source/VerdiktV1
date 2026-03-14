@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Plus, Users, Calendar, ArrowLeft, Building2, Loader2 } from 'lucide-react';
+import { X, Plus, Users, Calendar, ArrowLeft, Building2, Loader2, Sparkles } from 'lucide-react';
 import { Avatar } from '../../components/app/feedback/Avatar';
 import { TemplateSelector } from '../../components/app/TemplateSelector';
 import { useTeam, usePoles, useDecisions } from '../../hooks';
+import { supabase } from '../../lib/supabase';
 import type { DecisionTemplate } from '../../types';
 
 export const NewDecision = () => {
@@ -23,6 +24,24 @@ export const NewDecision = () => {
         members.map(m => m.id)
     );
     const [deadline, setDeadline] = useState('');
+    const [isStructuring, setIsStructuring] = useState(false);
+
+    const structureWithAI = async () => {
+        if (!title.trim() || isStructuring) return;
+        setIsStructuring(true);
+        try {
+            const { data, error } = await supabase.functions.invoke('structure-decision', {
+                body: { question: title.trim() },
+            });
+            if (error) throw error;
+            if (data?.context) setDescription(data.context);
+            if (data?.options?.length) setOptions(data.options);
+        } catch (err) {
+            console.error('AI structuring error:', err);
+        } finally {
+            setIsStructuring(false);
+        }
+    };
 
     // Mettre à jour les participants quand un pôle est sélectionné
     useEffect(() => {
@@ -142,14 +161,29 @@ export const NewDecision = () => {
                                     <label className="block text-xs font-medium text-tertiary mb-1">
                                         Question
                                     </label>
-                                    <input
-                                        type="text"
-                                        value={title}
-                                        onChange={(e) => setTitle(e.target.value)}
-                                        placeholder="Quelle décision devons-nous prendre ?"
-                                        className="w-full px-3 py-2.5 sm:py-2 bg-background border border-zinc-200 dark:border-white/5 rounded-lg text-sm text-primary placeholder:text-tertiary focus:outline-none focus:border-emerald-500/50 transition-colors"
-                                        required
-                                    />
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={title}
+                                            onChange={(e) => setTitle(e.target.value)}
+                                            placeholder="Quelle décision devons-nous prendre ?"
+                                            className="flex-1 px-3 py-2.5 sm:py-2 bg-background border border-zinc-200 dark:border-white/5 rounded-lg text-sm text-primary placeholder:text-tertiary focus:outline-none focus:border-emerald-500/50 transition-colors"
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={structureWithAI}
+                                            disabled={!title.trim() || isStructuring}
+                                            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+                                        >
+                                            {isStructuring ? (
+                                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                            ) : (
+                                                <Sparkles className="w-3.5 h-3.5" />
+                                            )}
+                                            <span className="hidden sm:inline">{isStructuring ? 'Structuration...' : 'Structurer avec l\'IA'}</span>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="block text-xs font-medium text-tertiary mb-1">

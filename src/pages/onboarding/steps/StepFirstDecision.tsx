@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useOnboarding } from '../../../context/OnboardingContext';
 import { Sparkles, Lightbulb, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { supabase } from '../../../lib/supabase';
 
 const suggestions = [
     "Quel outil de communication interne adopter ?",
@@ -27,43 +28,21 @@ export const StepFirstDecision = () => {
 
     const generateStructure = async () => {
         if (!data.firstDecisionQuestion.trim()) return;
-        
+
         setIsGenerating(true);
-        
-        // Simulate AI generation
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        // Mock AI response based on question
-        const question = data.firstDecisionQuestion.toLowerCase();
-        
-        let structure: AIStructure = {
-            context: "Décision à prendre pour l'équipe",
-            options: ["Option A", "Option B", "Option C"],
-            criteria: ["Impact", "Coût", "Délai"],
-        };
-
-        if (question.includes('outil') || question.includes('crm') || question.includes('logiciel')) {
-            structure = {
-                context: "Besoin d'un nouvel outil pour améliorer la productivité de l'équipe",
-                options: ["Solution A (leader marché)", "Solution B (open-source)", "Solution C (startup)"],
-                criteria: ["Prix", "Facilité d'adoption", "Intégrations", "Support"],
-            };
-        } else if (question.includes('recruter') || question.includes('embaucher')) {
-            structure = {
-                context: "Évaluation du besoin de recrutement et de son timing",
-                options: ["Recruter maintenant", "Attendre Q2", "Externaliser / Freelance"],
-                criteria: ["Budget disponible", "Charge de travail actuelle", "Délai de recrutement"],
-            };
-        } else if (question.includes('hybride') || question.includes('remote') || question.includes('télétravail')) {
-            structure = {
-                context: "Révision de la politique de travail de l'équipe",
-                options: ["100% remote", "Hybride (2j bureau)", "Hybride flexible", "Présentiel"],
-                criteria: ["Productivité", "Bien-être équipe", "Collaboration", "Coûts bureau"],
-            };
+        try {
+            const { data: result, error } = await supabase.functions.invoke('structure-decision', {
+                body: { question: data.firstDecisionQuestion.trim() },
+            });
+            if (error) throw error;
+            if (result?.context && result?.options && result?.criteria) {
+                setAiStructure(result);
+            }
+        } catch (err) {
+            console.error('AI structuring error:', err);
+        } finally {
+            setIsGenerating(false);
         }
-
-        setAiStructure(structure);
-        setIsGenerating(false);
     };
 
     const useSuggestion = (suggestion: string) => {

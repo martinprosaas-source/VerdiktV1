@@ -47,7 +47,7 @@ export const CTA = () => {
                             whileTap={{ scale: 0.98 }}
                             className="group inline-flex items-center gap-2 px-10 py-5 bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-lg rounded-full transition-all duration-300 shadow-[0_0_50px_rgba(16,185,129,0.3)] hover:shadow-[0_0_70px_rgba(16,185,129,0.4)]"
                         >
-                            Rejoindre la beta
+                            Réserver un call de 20 min
                             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                         </motion.button>
 
