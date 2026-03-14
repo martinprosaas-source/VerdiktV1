@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Section, FadeIn } from './ui/Section';
 import { motion } from 'framer-motion';
-import { Check, Crown } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { SlackLogo, NotionLogo, GoogleCalendarLogo } from './icons/IntegrationLogos';
 
 const integrations = [
@@ -84,10 +84,6 @@ export const Integrations = () => {
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-500/10 border border-amber-500/20">
-                                            <Crown className="w-3 h-3 text-amber-500" />
-                                            <span className="text-[10px] font-semibold text-amber-500">Pro</span>
-                                        </div>
                                     </div>
 
                                     {/* Hook */}
@@ -114,9 +110,12 @@ export const Integrations = () => {
 
                 {/* Bottom note */}
                 <FadeIn delay={0.4}>
-                    <p className="mt-10 text-center text-sm text-tertiary">
-                        {t('landing.integrations.note')}
-                    </p>
+                    <div className="mt-10 flex items-center justify-center gap-2">
+                        <Check className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                        <p className="text-center text-base font-medium text-primary">
+                            {t('landing.integrations.note')}
+                        </p>
+                    </div>
                 </FadeIn>
             </div>
         </Section>
