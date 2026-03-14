@@ -11,7 +11,7 @@ serve(async (req) => {
     }
 
     try {
-        const { question, language = 'fr' } = await req.json();
+        const { question, language = 'fr', templateContext, templateOptions } = await req.json();
         if (!question?.trim()) throw new Error('question is required');
 
         const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
@@ -19,21 +19,27 @@ serve(async (req) => {
 
         const lang = language === 'en' ? 'English' : 'French';
 
+        const hasTemplate = templateContext?.trim();
+
+        const templateBlock = hasTemplate
+            ? `\nThe team is using a decision template with the following pre-filled framework:\n\nContext structure:\n${templateContext.trim()}\n\nDefault vote options: ${(templateOptions || []).join(', ')}\n\nIMPORTANT: Use this template framework to generate a FILLED-IN context. Replace the empty fields/placeholders with concrete, relevant content based on the question. Keep the same structure and headings but fill them with useful details the team needs. You can refine or replace the vote options if the question calls for it.`
+            : '';
+
         const prompt = `You are an expert decision-making facilitator. A team member wants to make a decision and typed this question:
 
-"${question.trim()}"
+"${question.trim()}"${templateBlock}
 
 Generate a structured decision framework to help the team decide. Respond ONLY with raw JSON (no markdown, no code fences):
 
 {
-  "context": "A 1-2 sentence summary of the context and stakes behind this question",
+  "context": "A structured, filled-in context paragraph or bullet points",
   "options": ["Option 1", "Option 2", "Option 3"],
   "criteria": ["Criterion 1", "Criterion 2", "Criterion 3"]
 }
 
 Rules:
-- "context": Concise, relevant, helps the team understand what's at stake
-- "options": 2-4 concrete, actionable options. Not vague. Use short labels.
+- "context": ${hasTemplate ? 'Fill in the template structure with concrete details relevant to the question. Keep headings/labels, replace blanks with useful content.' : 'Concise, relevant, helps the team understand what\'s at stake'}
+- "options": 2-4 concrete, actionable options. Not vague. Use short labels.${hasTemplate ? ' You may keep, adapt, or replace the template defaults based on the question.' : ''}
 - "criteria": 2-4 evaluation criteria the team should weigh when voting
 - Respond in ${lang}
 - Keep everything short and practical`;

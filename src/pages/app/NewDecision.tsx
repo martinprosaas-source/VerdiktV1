@@ -30,8 +30,13 @@ export const NewDecision = () => {
         if (!title.trim() || isStructuring) return;
         setIsStructuring(true);
         try {
+            const body: Record<string, unknown> = { question: title.trim() };
+            if (selectedTemplate) {
+                body.templateContext = selectedTemplate.suggestedContext;
+                body.templateOptions = selectedTemplate.defaultOptions;
+            }
             const { data, error } = await supabase.functions.invoke('structure-decision', {
-                body: { question: title.trim() },
+                body,
             });
             if (error) throw error;
             if (data?.context) setDescription(data.context);
