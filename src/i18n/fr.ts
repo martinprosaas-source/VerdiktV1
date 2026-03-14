@@ -75,9 +75,6 @@ const fr = {
             step1: { num: '01', title: 'Posez', highlight: 'la question', desc: '"On augmente les prix ?" Contexte, options, deadline. En 2 min, c\'est lancé.' },
             step2: { num: '02', title: 'Chacun', highlight: 'vote', desc: 'Marie vote +15%. Tom vote +10%. Chacun argumente. Async.' },
             step3: { num: '03', title: 'Décision', highlight: 'rendue', desc: 'Verdikt synthétise. +15% recommandé. Archivé, traçable.' },
-            avgTime: 'Temps moyen :',
-            avgValue: '14 min 32 sec',
-            weeklyCount: '847 décisions cette semaine',
         },
         integrations: {
             label: '// INTÉGRATIONS',

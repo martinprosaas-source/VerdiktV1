@@ -75,9 +75,6 @@ const en = {
             step1: { num: '01', title: 'Ask', highlight: 'the question', desc: '"Should we raise prices?" Context, options, deadline. In 2 min, it\'s live.' },
             step2: { num: '02', title: 'Everyone', highlight: 'votes', desc: 'Marie votes +15%. Tom votes +10%. Everyone argues. Async.' },
             step3: { num: '03', title: 'Decision', highlight: 'made', desc: 'Verdikt synthesizes. +15% recommended. Archived, traceable.' },
-            avgTime: 'Average time:',
-            avgValue: '14 min 32 sec',
-            weeklyCount: '847 decisions this week',
         },
         integrations: {
             label: '// INTEGRATIONS',

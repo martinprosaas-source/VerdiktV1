@@ -81,20 +81,6 @@ export const HowItWorks = () => {
                     </div>
                 </div>
 
-                {/* Bottom accent */}
-                <FadeIn delay={0.6}>
-                    <div className="mt-20 sm:mt-28 pt-8 border-t border-zinc-200 dark:border-white/5">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                            <p className="text-sm text-tertiary font-mono">
-                                {t('landing.how.avgTime')} <span className="text-emerald-500">{t('landing.how.avgValue')}</span>
-                            </p>
-                            <div className="flex items-center gap-2 text-sm text-tertiary">
-                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                <span>{t('landing.how.weeklyCount')}</span>
-                            </div>
-                        </div>
-                    </div>
-                </FadeIn>
             </div>
         </Section>
     );
