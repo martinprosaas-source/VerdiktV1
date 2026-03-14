@@ -2,5 +2,7 @@ User-agent: *
 Allow: /
 Disallow: /app/
 Disallow: /onboarding/
+Disallow: /signup
+Disallow: /register
 
 Sitemap: https://verdikt.dev/sitemap.xml
