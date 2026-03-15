@@ -2,8 +2,8 @@ import { useTranslation } from 'react-i18next';
 import { Section, FadeIn } from './ui/Section';
 import { motion } from 'framer-motion';
 
-const painKeys = ['pain1', 'pain2', 'pain3', 'pain4', 'pain5'];
-const painNumbers = ['01', '02', '03', '04', '05'];
+const painKeys = ['pain1', 'pain2', 'pain3', 'pain4'];
+const painNumbers = ['01', '02', '03', '04'];
 
 export const ForWho = () => {
     const { t } = useTranslation();
@@ -17,6 +17,9 @@ export const ForWho = () => {
                     <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-primary leading-[1.1] tracking-tight">
                         {t('landing.forWho.title')}
                     </h2>
+                    <p className="text-lg sm:text-xl text-secondary mt-4">
+                        {t('landing.forWho.subtitle')}
+                    </p>
                 </FadeIn>
 
                 {/* Pain points - clean list */}
